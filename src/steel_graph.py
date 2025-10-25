@@ -10,7 +10,7 @@ class SteelGraph:
         """
         try:
             self.df = pd.read_csv(processed_data_path)
-            self.graph = nx.DiGraph() # Cria um Grafo Direcionado
+            self.graph = nx.DiGraph() 
             self._build_graph()
             print(f"Arquivo '{processed_data_path}' carregado.")
             print(f"Grafo principal construído com {self.graph.number_of_nodes()} nós e {self.graph.number_of_edges()} arestas.")
@@ -26,29 +26,29 @@ class SteelGraph:
         if self.df is None:
             return
 
-        # Nós de início e fim com suas camadas
-        self.graph.add_node('SOURCE', layer=0) # Camada 0
-        self.graph.add_node('SINK', layer=5)   # Camada 5
+        
+        self.graph.add_node('SOURCE', layer=0) 
+        self.graph.add_node('SINK', layer=5)   
 
-        # Iterar sobre cada linha (cada processo de revenimento)
+        
         for _, row in self.df.iterrows():
-            # Extrair os nós do processo
+            
             steel = row['Steel type']
             temp_group = row['temp_group']
             time_group = row['time_group']
             hardness_group = row['hardness_group']
             
-            # Extrair os valores brutos para usar como pesos
+            
             raw_temp = row['Tempering temperature (ºC)']
             raw_time = row['Tempering time (s)']
 
-            # Adicionar nós com suas camadas
+            
             self.graph.add_node(steel, layer=1)
             self.graph.add_node(temp_group, layer=2)
             self.graph.add_node(time_group, layer=3)
             self.graph.add_node(hardness_group, layer=4)
 
-            # Adicionar arestas com os valores brutos como atributos
+            
             self.graph.add_edge('SOURCE', steel)
             self.graph.add_edge(steel, temp_group, temperature=raw_temp)
             self.graph.add_edge(temp_group, time_group, time=raw_time)
@@ -66,7 +66,7 @@ class SteelGraph:
         if self.graph is None:
             return "Grafo não foi construído.", 0, None, None
 
-        # --- 1. Filtrar DataFrame ---
+        
         filtered_df = self.df.copy()
         for col, op_val in filters.items():
             if col not in filtered_df.columns:
@@ -87,7 +87,7 @@ class SteelGraph:
         if filtered_df.empty:
             return f"Nenhum aço encontrado com os filtros: {filters}", 0, None, None
         
-        # --- 2. Construir Grafo Temporário Filtrado ---
+        
         temp_graph = SteelGraph.__new__(SteelGraph) 
         temp_graph.df = filtered_df
         temp_graph.graph = nx.DiGraph()
@@ -95,7 +95,7 @@ class SteelGraph:
         
         print(f"Grafo filtrado construído com {temp_graph.graph.number_of_nodes()} nós e {temp_graph.graph.number_of_edges()} arestas.")
 
-        # --- 3. Definir Pesos com base na Otimização ---
+        
         for u, v in temp_graph.graph.edges():
             temp_graph.graph[u][v]['weight'] = 0.0
 
@@ -111,7 +111,7 @@ class SteelGraph:
                     data['weight'] = data['temperature']
             print(f"\nOtimizando por: Menor Temperatura (Custo Energético)")
 
-        # --- 4. Rodar Dijkstra ---
+        
         target_node = filters.get('hardness_group')
         if not target_node:
             return "Erro: 'hardness_group' (dureza) deve ser especificado nos filtros.", 0, None, None
@@ -130,15 +130,15 @@ class SteelGraph:
                                            target=target_node,
                                            weight='weight')
             
-            # --- 5. (MUDANÇA) EXTRAIR DETALHES COMPLETOS ---
             
-            # Pegar os nós do caminho
+            
+            
             steel_type = path[1]
             temp_group = path[2]
             time_group = path[3]
             hardness_group = path[4]
 
-            # Encontrar a linha exata no DataFrame filtrado que corresponde ao caminho
+            
             chosen_row = filtered_df[
                 (filtered_df['Steel type'] == steel_type) &
                 (filtered_df['temp_group'] == temp_group) &
@@ -146,30 +146,30 @@ class SteelGraph:
                 (filtered_df['hardness_group'] == hardness_group)
             ]
             
-            result_details = {} # Dicionário principal de resultados
+            result_details = {} 
             if not chosen_row.empty:
-                # Pegar a primeira linha
+                
                 first_row = chosen_row.iloc[0]
                 
-                # (NOVO) Adicionar os detalhes do processo
+                
                 result_details['Aço Encontrado'] = first_row['Steel type']
                 result_details['Dureza Final (HRC)'] = float(first_row['Final hardness (HRC) - post tempering'])
                 result_details['Temp. Revenimento (C)'] = float(first_row['Tempering temperature (ºC)'])
                 result_details['Tempo Revenimento (s)'] = float(first_row['Tempering time (s)'])
                 
-                # Adicionar colunas de composição
+                
                 comp_cols = ['C (%wt)', 'Mn (%wt)', 'P (%wt)', 'S (%wt)', 
                              'Si (%wt)', 'Ni (%wt)', 'Cr (%wt)', 'Mo (%wt)', 
                              'V (%wt)', 'Al (%wt)', 'Cu (%wt)']
                 
-                composition_dict = {} # Criar um sub-dicionário
+                composition_dict = {} 
                 for col in comp_cols:
                     if col in first_row:
                         composition_dict[col] = float(first_row[col])
                 
-                result_details['Composição Química'] = composition_dict # Adicionar como sub-dicionário
+                result_details['Composição Química'] = composition_dict 
             
-            # Retorna os detalhes completos
+            
             return path, cost, temp_graph.graph, result_details
 
         except nx.NetworkXNoPath:
