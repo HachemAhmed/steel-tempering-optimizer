@@ -1,0 +1,59 @@
+[
+  {
+    "nome_consulta": "Teste_1_Padrao_Otimizado_Tempo",
+    "otimizar_por": "time",
+    "filtros": {
+      "hardness_group": "45-50 HRC",
+      "temp_group": "400-450 C"
+    }
+  },
+  {
+    "nome_consulta": "Teste_2_Padrao_Otimizado_Temperatura",
+    "otimizar_por": "temperature",
+    "filtros": {
+      "hardness_group": "55-60 HRC",
+      "time_group": "600.0 s"
+    }
+  },
+  {
+    "nome_consulta": "Teste_3_Aco_Liga_Alto_Cromo",
+    "otimizar_por": "time",
+    "filtros": {
+      "hardness_group": "50-55 HRC",
+      "C (%wt)": {"op": ">", "val": 0.5},
+      "Cr (%wt)": {"op": ">", "val": 0.7}
+    }
+  },
+  {
+    "nome_consulta": "Teste_4_Impossivel_Dureza_Alta_Carbono_Baixo",
+    "otimizar_por": "time",
+    "filtros": {
+      "hardness_group": "60-65 HRC",
+      "C (%wt)": {"op": "<", "val": 0.1}
+    }
+  },
+  {
+    "nome_consulta": "Teste_5_Baixa_Dureza_Alta_Temperatura",
+    "otimizar_por": "temperature",
+    "filtros": {
+      "hardness_group": "15-20 HRC",
+      "temp_group": "650-700 C"
+    }
+  },
+  {
+    "nome_consulta": "Teste_6_Tempo_Longo_24h",
+    "otimizar_por": "temperature",
+    "filtros": {
+      "hardness_group": "35-40 HRC",
+      "time_group": "86400.0 s"
+    }
+  },
+  {
+    "nome_consulta": "Teste_7_Aco_Especifico_1045",
+    "otimizar_por": "time",
+    "filtros": {
+      "hardness_group": "45-50 HRC",
+      "Steel type": "AISI-SAE 1045"
+    }
+  }
+]
