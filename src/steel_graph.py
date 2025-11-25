@@ -4,140 +4,146 @@ import networkx as nx
 import os
 
 class SteelGraph:
-    def __init__(self, processed_data_path):
-        """
-        Inicializa o grafo, carregando os dados agrupados.
-        """
+    def __init__(self, preprocessed_data_path):
         try:
-            self.df = pd.read_csv(processed_data_path)
-            self.graph = nx.DiGraph() # Cria um Grafo Direcionado
-            self._build_graph()
-            print(f"Arquivo '{processed_data_path}' carregado.")
-            print(f"Grafo principal construído com {self.graph.number_of_nodes()} nós e {self.graph.number_of_edges()} arestas.")
+            self.df = pd.read_csv(preprocessed_data_path)
+            self.graph = nx.DiGraph() 
+            self._build_master_graph()
+            # Prints removidos para limpeza
         except FileNotFoundError:
-            print(f"Erro: Arquivo de dados '{processed_data_path}' não foi encontrado.")
+            print(f"Erro: Arquivo de dados '{preprocessed_data_path}' não encontrado.")
             self.df = None
             self.graph = None
 
-    def _build_graph(self):
-        """
-        Constrói o grafo em camadas a partir do DataFrame.
-        """
-        if self.df is None:
-            return
+    def _build_master_graph(self):
+        if self.df is None: return
+            
         self.graph.add_node('SOURCE', layer=0)
-        self.graph.add_node('SINK', layer=5)
-        for _, row in self.df.iterrows():
-            steel = row['Steel type']
-            temp_group = row['temp_group']
-            time_group = row['time_group']
-            hardness_group = row['hardness_group']
-            raw_temp = row['Tempering temperature (ºC)']
-            raw_time = row['Tempering time (s)']
-            self.graph.add_node(steel, layer=1)
-            self.graph.add_node(temp_group, layer=2)
-            self.graph.add_node(time_group, layer=3)
-            self.graph.add_node(hardness_group, layer=4)
-            self.graph.add_edge('SOURCE', steel)
-            self.graph.add_edge(steel, temp_group, temperature=raw_temp)
-            self.graph.add_edge(temp_group, time_group, time=raw_time)
-            self.graph.add_edge(time_group, hardness_group)
-            self.graph.add_edge(hardness_group, 'SINK')
+        self.graph.add_node('SINK', layer=5) 
+        
+        comp_cols = [c for c in self.df.columns if '%wt' in c]
+        steel_compositions = self.df.groupby('Steel type').first()[comp_cols]
+        
+        for i, row in self.df.iterrows():
+            s = row['Steel type']
+            t = row['Tempering time (s)']
+            tmp = row['Tempering temperature (ºC)']
+            h = row['Final hardness (HRC) - post tempering']
+
+            n_steel = f"Aço: {s}"
+            n_time = f"Tempo: {t} s | id:{i}"  
+            n_temp = f"Temp: {tmp} C | id:{i}" 
+            n_hardness = f"Dureza: {h} HRC" 
+
+            if not self.graph.has_node(n_steel):
+                comp_data = steel_compositions.loc[s].to_dict() 
+                comp_data['steel_type'] = s 
+                self.graph.add_node(n_steel, layer=1, type='steel', **comp_data)
+                self.graph.add_edge('SOURCE', n_steel) 
+            
+            if not self.graph.has_node(n_time): self.graph.add_node(n_time, layer=2, type='time', value=t)
+            if not self.graph.has_node(n_temp): self.graph.add_node(n_temp, layer=3, type='temp', value=tmp)
+            if not self.graph.has_node(n_hardness): self.graph.add_node(n_hardness, layer=4, type='hardness', value=h)
+
+            self.graph.add_edge(n_steel, n_time, time=t)
+            self.graph.add_edge(n_time, n_temp, temperature=tmp)
+            self.graph.add_edge(n_temp, n_hardness)
+            self.graph.add_edge(n_hardness, 'SINK') 
+
+    def _prune_graph(self, filters):
+        pruned_graph = self.graph.copy()
+        nodes_to_remove = set()
+        
+        comp_filters = {k: v for k, v in filters.items() if '%wt' in k}
+        exact_filters = {k: v for k, v in filters.items() if '%wt' not in k and '_range' not in k}
+
+        for node, data in pruned_graph.nodes(data=True):
+            if data.get('type') == 'steel':
+                for col, op_val in comp_filters.items():
+                    if col not in data: continue 
+                    op, val = op_val['op'], op_val['val']
+                    steel_val = data[col]
+                    if (op == '>' and not steel_val > val) or (op == '<' and not steel_val < val) or (op == '==' and not steel_val == val):
+                        nodes_to_remove.add(node); break 
+                if node in nodes_to_remove: continue 
+                for col, val in exact_filters.items():
+                    if col in data and data[col] != val:
+                        nodes_to_remove.add(node); break
+        pruned_graph.remove_nodes_from(nodes_to_remove)
+
+        nodes_to_remove = set()
+        range_filters = {'time': filters.get('time_range'), 'temp': filters.get('temperature_range'), 'hardness': filters.get('hardness_range')}
+        
+        for node, data in pruned_graph.nodes(data=True):
+            node_type = data.get('type')
+            if node_type in range_filters:
+                f = range_filters[node_type]
+                if f and not (f['min'] <= data.get('value', -1) <= f['max']):
+                    nodes_to_remove.add(node)
+        pruned_graph.remove_nodes_from(nodes_to_remove)
+        
+        target_nodes = [n for n, d in pruned_graph.nodes(data=True) if d.get('type') == 'hardness']
+        if not target_nodes: return None
+
+        nodes_from_source = set(nx.descendants(pruned_graph, 'SOURCE'))
+        nodes_to_target = set()
+        for target in target_nodes:
+            try: nodes_to_target.update(nx.ancestors(pruned_graph, target))
+            except nx.NetworkXNoPath: continue
+            
+        valid_nodes = nodes_from_source & nodes_to_target
+        valid_nodes.add('SOURCE') 
+        valid_nodes.update(target_nodes) 
+        
+        return pruned_graph.subgraph(valid_nodes)
 
     def find_best_process(self, filters, optimize_by='time'):
-        """
-        Encontra o melhor processo (caminho mais curto) usando Dijkstra.
-        """
-        if self.graph is None:
-            return "Grafo não foi construído.", 0, None, None
+        if self.graph is None: return "Grafo mestre não foi construído.", 0, None, None
 
-        # --- 1. Filtrar DataFrame ---
-        filtered_df = self.df.copy()
-        for col, op_val in filters.items():
-            if col not in filtered_df.columns:
-                print(f"Aviso: A coluna de filtro '{col}' não foi encontrada. Ignorando.")
-                continue
-
-            # --- (MUDANÇA AQUI) ---
-            # Agora procuramos por um dicionário {'op': '...', 'val': ...}
-            if isinstance(op_val, dict) and 'op' in op_val and 'val' in op_val:
-                op = op_val['op']
-                val = op_val['val']
-                if op == '>':
-                    filtered_df = filtered_df[filtered_df[col] > val]
-                elif op == '<':
-                    filtered_df = filtered_df[filtered_df[col] < val]
-                elif op == '==':
-                    filtered_df = filtered_df[filtered_df[col] == val]
-            else:
-                # Filtro de string normal (ex: "50-55 HRC" ou "AISI-SAE 1030")
-                filtered_df = filtered_df[filtered_df[col] == op_val]
-        
-        if filtered_df.empty:
-            return f"Nenhum aço encontrado com os filtros: {filters}", 0, None, None
-        
-        # --- 2. Construir Grafo Temporário Filtrado ---
-        temp_graph = SteelGraph.__new__(SteelGraph) 
-        temp_graph.df = filtered_df
-        temp_graph.graph = nx.DiGraph()
-        temp_graph._build_graph() 
-        
-        print(f"Grafo filtrado construído com {temp_graph.graph.number_of_nodes()} nós e {temp_graph.graph.number_of_edges()} arestas.")
-
-        # --- 3. Definir Pesos com base na Otimização ---
-        for u, v in temp_graph.graph.edges():
-            temp_graph.graph[u][v]['weight'] = 0.0
-        if optimize_by == 'time':
-            for u, v, data in temp_graph.graph.edges(data=True):
-                if 'time' in data: data['weight'] = data['time']
-            print(f"\nOtimizando por: Menor Tempo de Revenimento")
-        elif optimize_by == 'temperature':
-            for u, v, data in temp_graph.graph.edges(data=True):
-                if 'temperature' in data: data['weight'] = data['temperature']
-            print(f"\nOtimizando por: Menor Temperatura (Custo Energético)")
-
-        # --- 4. Rodar Dijkstra ---
-        target_node = filters.get('hardness_group')
-        if not target_node:
-            return "Erro: 'hardness_group' (dureza) deve ser especificado nos filtros.", 0, None, None
-        if target_node not in temp_graph.graph:
-             return f"Dureza '{target_node}' não é alcançável com os filtros atuais.", 0, None, None
-
-        try:
-            path = nx.shortest_path(temp_graph.graph, source='SOURCE', target=target_node, weight='weight')
-            cost = nx.shortest_path_length(temp_graph.graph, source='SOURCE', target=target_node, weight='weight')
+        pruned_graph = self._prune_graph(filters)
+        if pruned_graph is None or pruned_graph.number_of_nodes() <= 1: 
+            return f"Nenhum aço encontrado.", 0, None, None
             
-            # --- 5. EXTRAIR DETALHES COMPLETOS ---
-            steel_type = path[1]
-            temp_group = path[2]
-            time_group = path[3]
-            hardness_group = path[4]
-            chosen_row = filtered_df[
-                (filtered_df['Steel type'] == steel_type) &
-                (filtered_df['temp_group'] == temp_group) &
-                (filtered_df['time_group'] == time_group) &
-                (filtered_df['hardness_group'] == hardness_group)
-            ]
-            
-            result_details = {}
-            if not chosen_row.empty:
-                first_row = chosen_row.iloc[0]
-                result_details['Aço Encontrado'] = first_row['Steel type']
-                result_details['Dureza Final (HRC)'] = float(first_row['Final hardness (HRC) - post tempering'])
-                result_details['Temp. Revenimento (C)'] = float(first_row['Tempering temperature (ºC)'])
-                result_details['Tempo Revenimento (s)'] = float(first_row['Tempering time (s)'])
-                comp_cols = ['C (%wt)', 'Mn (%wt)', 'P (%wt)', 'S (%wt)', 
-                             'Si (%wt)', 'Ni (%wt)', 'Cr (%wt)', 'Mo (%wt)', 
-                             'V (%wt)', 'Al (%wt)', 'Cu (%wt)']
-                composition_dict = {}
-                for col in comp_cols:
-                    if col in first_row:
-                        composition_dict[col] = float(first_row[col])
-                result_details['Composição Química'] = composition_dict
-            
-            return path, cost, temp_graph.graph, result_details
+        # (Print removido)
 
-        except nx.NetworkXNoPath:
-            return f"Nenhum caminho encontrado de 'SOURCE' para '{target_node}' com os filtros atuais.", 0, None, None
-        except Exception as e:
-            return f"Ocorreu um erro: {e}", 0, None, None
+        weighted_graph = pruned_graph.copy()
+        for u, v, data in weighted_graph.edges(data=True):
+            data['weight'] = 0.0 
+            if optimize_by == 'time' and 'time' in data: data['weight'] = data['time']
+            elif optimize_by == 'temperature' and 'temperature' in data: data['weight'] = data['temperature']
+        
+        final_target_nodes = [n for n, d in weighted_graph.nodes(data=True) if d.get('type') == 'hardness']
+        if not final_target_nodes: return "Nenhum caminho completo.", 0, None, None
+
+        best_path = None
+        best_cost = float('inf')
+
+        for target in final_target_nodes:
+            try:
+                cost = nx.shortest_path_length(weighted_graph, 'SOURCE', target, 'weight')
+                if cost < best_cost:
+                    best_cost = cost
+                    best_path = nx.shortest_path(weighted_graph, 'SOURCE', target, 'weight')
+            except nx.NetworkXNoPath: continue 
+
+        if best_path is None: return f"Nenhum caminho alcançável.", 0, None, None
+
+        n_steel_data = weighted_graph.nodes[best_path[1]]
+        n_time_data = weighted_graph.nodes[best_path[2]]
+        n_temp_data = weighted_graph.nodes[best_path[3]]
+        n_hardness_data = weighted_graph.nodes[best_path[4]]
+        
+        comp_cols = [c for c in self.df.columns if '%wt' in c]
+        composition_dict = {k: float(v) for k, v in n_steel_data.items() if k in comp_cols}
+
+        result_details = {
+            'Aço Encontrado': n_steel_data['steel_type'],
+            'Dureza Final (HRC)': n_hardness_data['value'],
+            'Temp. Revenimento (C)': n_temp_data['value'],
+            'Tempo Revenimento (s)': n_time_data['value'],
+            'Composição Química': composition_dict
+        }
+        
+        return best_path, best_cost, pruned_graph, result_details
+
+    def get_master_graph(self): return self.graph

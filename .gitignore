@@ -1,0 +1,5 @@
+datasets/*
+outputs/*
+
+!datasets/.gitkeep
+!outputs/.gitkeep

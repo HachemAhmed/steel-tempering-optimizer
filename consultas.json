@@ -3,23 +3,23 @@
     "nome_consulta": "Teste_1_Padrao_Otimizado_Tempo",
     "otimizar_por": "time",
     "filtros": {
-      "hardness_group": "45-50 HRC",
-      "temp_group": "400-450 C"
+      "hardness_range": {"min": 45, "max": 47},
+      "temperature_range": {"min": 400, "max": 420}
     }
   },
   {
     "nome_consulta": "Teste_2_Padrao_Otimizado_Temperatura",
     "otimizar_por": "temperature",
     "filtros": {
-      "hardness_group": "55-60 HRC",
-      "time_group": "600.0 s"
+      "hardness_range": {"min": 55, "max": 60},
+      "time_range": {"min": 600.0, "max": 600.0}
     }
   },
   {
     "nome_consulta": "Teste_3_Aco_Liga_Alto_Cromo",
     "otimizar_por": "time",
     "filtros": {
-      "hardness_group": "50-55 HRC",
+      "hardness_range": {"min": 50, "max": 55},
       "C (%wt)": {"op": ">", "val": 0.5},
       "Cr (%wt)": {"op": ">", "val": 0.7}
     }
@@ -28,7 +28,7 @@
     "nome_consulta": "Teste_4_Impossivel_Dureza_Alta_Carbono_Baixo",
     "otimizar_por": "time",
     "filtros": {
-      "hardness_group": "60-65 HRC",
+      "hardness_range": {"min": 60, "max": 65},
       "C (%wt)": {"op": "<", "val": 0.1}
     }
   },
@@ -36,24 +36,32 @@
     "nome_consulta": "Teste_5_Baixa_Dureza_Alta_Temperatura",
     "otimizar_por": "temperature",
     "filtros": {
-      "hardness_group": "15-20 HRC",
-      "temp_group": "650-700 C"
+      "hardness_range": {"min": 15, "max": 20},
+      "temperature_range": {"min": 650, "max": 700}
     }
   },
   {
     "nome_consulta": "Teste_6_Tempo_Longo_24h",
     "otimizar_por": "temperature",
     "filtros": {
-      "hardness_group": "35-40 HRC",
-      "time_group": "86400.0 s"
+      "hardness_range": {"min": 35, "max": 40},
+      "time_range": {"min": 86400.0, "max": 86400.0}
     }
   },
   {
     "nome_consulta": "Teste_7_Aco_Especifico_1045",
     "otimizar_por": "time",
     "filtros": {
-      "hardness_group": "45-50 HRC",
-      "Steel type": "AISI-SAE 1045"
+      "hardness_range": {"min": 45, "max": 50},
+      "steel_type": "AISI-SAE 1045"
+    }
+  },
+  {
+    "nome_consulta": "Teste_8_Heatmap_Amplo_4140",
+    "otimizar_por": "time",
+    "filtros": {
+      "hardness_range": {"min": 20, "max": 60},
+      "steel_type": "AISI-SAE 4140"
     }
   }
 ]
