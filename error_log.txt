@@ -1,8 +1,0 @@
-2025-11-25 21:09:22 - ERROR - Erro fatal na execução principal:
-Traceback (most recent call last):
-  File "/home/alvaro/Desktop/AEDS2/src/run_project.py", line 34, in <module>
-    from graph_visualizer import plot_filtered_graph, plot_full_graph, plot_hardness_heatmap
-  File "/home/alvaro/Desktop/AEDS2/src/graph_visualizer.py", line 46
-    nx.draw_networkx_nodes(G_display, pos, nodelist=path_display, node_color='
-                                                                             ^
-SyntaxError: unterminated string literal (detected at line 46)
