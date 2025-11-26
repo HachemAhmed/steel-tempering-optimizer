@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np 
+
 def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
     if graph is None or not path or isinstance(path, str):
         return
@@ -123,7 +124,6 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
     cbar = plt.colorbar(sc)
     cbar.set_label('Dureza Final (HRC)', rotation=270, labelpad=15)
 
-    # 2. DESTAQUE DO VENCEDOR (Redesenhar no topo)
     if highlight_point:
         best_temp, best_time = highlight_point
 
@@ -132,9 +132,9 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
                         s=100, edgecolors='black', alpha=1.0,
                         vmin=min_h, vmax=max_h, zorder=5) 
 
-        plt.plot(best_temp, best_time, marker='o', markersize=25, markeredgecolor='black', markerfacecolor='none', markeredgewidth=3, linestyle='None', label='Solução Ótima', zorder=10)
+        plt.plot(best_temp, best_time, marker='o', markersize=25, markeredgecolor='black', markerfacecolor='none', markeredgewidth=3, linestyle='None', label='Solução Otimizada', zorder=10)
 
-    plt.title('Espaço de Solução: Processos Válidos vs. Solução Ótima', fontsize=14)
+    plt.title('Espaço de Solução: Processos Válidos vs. Solução Otimizada', fontsize=14)
     plt.xlabel('Temperatura de Revenimento (ºC)', fontsize=12)
     plt.ylabel('Tempo de Revenimento (s)', fontsize=12)
     
