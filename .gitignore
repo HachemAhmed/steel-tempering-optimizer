@@ -5,3 +5,5 @@ outputs/*
 !outputs/.gitkeep
 
 venv/
+
+error_log.txt
