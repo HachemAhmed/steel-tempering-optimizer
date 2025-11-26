@@ -4,7 +4,7 @@ import glob
 import sys
 import logging
 
-# --- Configuração de Silêncio ---
+
 class NullWriter:
     def write(self, text): pass
     def flush(self): pass
@@ -181,7 +181,7 @@ if __name__ == "__main__":
                     hardness_vencedor = None
                     if detalhes:
                         coords_vencedor = (detalhes['Temp. Revenimento (C)'], detalhes['Tempo Revenimento (s)'])
-                        # IMPORTANTE: Captura a dureza para passar ao visualizador
+                        
                         hardness_vencedor = detalhes.get('Dureza Final (HRC)')
                     
                     plot_hardness_heatmap(grafo_podado, output_path_heatmap, highlight_point=coords_vencedor, winner_hardness=hardness_vencedor)

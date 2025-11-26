@@ -9,7 +9,7 @@ class SteelGraph:
             self.df = pd.read_csv(preprocessed_data_path)
             self.graph = nx.DiGraph() 
             self._build_master_graph()
-            # Prints removidos para limpeza
+            
         except FileNotFoundError:
             print(f"Erro: Arquivo de dados '{preprocessed_data_path}' não encontrado.")
             self.df = None
@@ -104,7 +104,7 @@ class SteelGraph:
         if pruned_graph is None or pruned_graph.number_of_nodes() <= 1: 
             return f"Nenhum aço encontrado.", 0, None, None
             
-        # (Print removido)
+        
 
         weighted_graph = pruned_graph.copy()
         for u, v, data in weighted_graph.edges(data=True):

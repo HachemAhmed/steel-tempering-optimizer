@@ -1,7 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import numpy as np # Importante para calcular min/max
-
+import numpy as np 
 def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
     if graph is None or not path or isinstance(path, str):
         return
@@ -78,9 +77,7 @@ def plot_full_graph(graph, output_image_filename):
     print(f"Grafo completo salvo com sucesso em {output_image_filename}")
 
 def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, winner_hardness=None):
-    """
-    Gera um mapa de calor (Scatter Plot) com ESCALA DINÂMICA.
-    """
+    
     if graph is None or graph.number_of_nodes() == 0:
         print("Grafo vazio, pulando mapa de calor.")
         return
@@ -111,18 +108,14 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
 
     print(f"Gerando Mapa de Calor com {len(temperatures)} pontos em {output_image_filename}...")
 
-    # Calcular limites DINÂMICOS de dureza para maximizar contraste
     min_h = min(hardnesses)
     max_h = max(hardnesses)
-    # Se min == max (só 1 ponto), criar uma margem para não dar erro
     if min_h == max_h:
         min_h -= 1
         max_h += 1
 
     plt.figure(figsize=(10, 8))
-    
-    # 1. Plotar TODOS os pontos (Fundo)
-    # Usamos vmin e vmax calculados acima para garantir consistência
+
     sc = plt.scatter(temperatures, times, c=hardnesses, cmap='RdYlBu_r', 
                      s=100, edgecolors='gray', alpha=1.0, 
                      vmin=min_h, vmax=max_h, label='Opções Válidas')
@@ -133,15 +126,12 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
     # 2. DESTAQUE DO VENCEDOR (Redesenhar no topo)
     if highlight_point:
         best_temp, best_time = highlight_point
-        
-        # A) Redesenhar a bolinha colorida do vencedor POR CIMA de tudo (zorder=5)
-        # Usando OS MESMOS vmin/vmax para garantir que a cor seja idêntica à barra
+
         if winner_hardness is not None:
             plt.scatter([best_temp], [best_time], c=[winner_hardness], cmap='RdYlBu_r',
                         s=100, edgecolors='black', alpha=1.0,
                         vmin=min_h, vmax=max_h, zorder=5) 
 
-        # B) Desenhar o Círculo Preto Vazio (Moldura) (zorder=10)
         plt.plot(best_temp, best_time, marker='o', markersize=25, markeredgecolor='black', markerfacecolor='none', markeredgewidth=3, linestyle='None', label='Solução Ótima', zorder=10)
 
     plt.title('Espaço de Solução: Processos Válidos vs. Solução Ótima', fontsize=14)
@@ -159,8 +149,6 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
         except AttributeError: pass
 
     plt.grid(True, linestyle='--', alpha=0.5)
-    
-    # Sem escala logarítmica (Linear)
 
     plt.tight_layout() 
     plt.savefig(output_image_filename, bbox_inches='tight') 

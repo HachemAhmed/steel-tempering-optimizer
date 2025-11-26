@@ -3,3 +3,5 @@ outputs/*
 
 !datasets/.gitkeep
 !outputs/.gitkeep
+
+venv/
