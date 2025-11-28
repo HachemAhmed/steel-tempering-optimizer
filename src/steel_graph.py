@@ -11,7 +11,6 @@ class SteelGraph:
         try:
             self.df = pd.read_csv(preprocessed_data_path)
             
-            # Calculate global maximums for normalization
             self.max_time = self.df['Tempering time (s)'].max()
             self.max_temp = self.df['Tempering temperature (ºC)'].max()
             
@@ -40,13 +39,11 @@ class SteelGraph:
             tmp = row['Tempering temperature (ºC)']
             h = row['Final hardness (HRC) - post tempering']
 
-            # Unique Node Names to prevent phantom paths
             n_steel = f"Steel: {s}"
             n_time = f"Time: {t} s | id:{i}"  
             n_temp = f"Temp: {tmp} C | id:{i}" 
             n_hardness = f"Hardness: {h} HRC" 
 
-            # Add Nodes
             if not self.graph.has_node(n_steel):
                 comp_data = steel_compositions.loc[s].to_dict() 
                 comp_data['steel_type'] = s 
@@ -75,10 +72,8 @@ class SteelGraph:
         comp_filters = {k: v for k, v in filters.items() if '%wt' in k}
         exact_filters = {k: v for k, v in filters.items() if '%wt' not in k and '_range' not in k}
 
-        # 1. Prune Steel Layer (Composition & Exact Type)
         for node, data in pruned_graph.nodes(data=True):
             if data.get('type') == 'steel':
-                # Composition Filters
                 for col, op_val in comp_filters.items():
                     if col not in data: continue 
                     
@@ -97,7 +92,6 @@ class SteelGraph:
 
                 if node in nodes_to_remove: continue 
                 
-                # Exact Filters (e.g. steel_type)
                 for col, val in exact_filters.items():
                     if col in data:
                         if data[col] != val:
@@ -105,7 +99,6 @@ class SteelGraph:
                     
         pruned_graph.remove_nodes_from(nodes_to_remove)
 
-        # 2. Prune by Range (Time, Temp, Hardness)
         nodes_to_remove = set()
         range_filters = {'time': filters.get('time_range'), 'temp': filters.get('temperature_range'), 'hardness': filters.get('hardness_range')}
         
@@ -117,7 +110,6 @@ class SteelGraph:
                     nodes_to_remove.add(node)
         pruned_graph.remove_nodes_from(nodes_to_remove)
         
-        # 3. Clean up Orphans
         target_nodes = [n for n, d in pruned_graph.nodes(data=True) if d.get('type') == 'hardness']
         if not target_nodes: return None
 
@@ -131,7 +123,6 @@ class SteelGraph:
         valid_nodes.add('SOURCE') 
         valid_nodes.update(target_nodes) 
         
-        # Deterministic Sorting
         sorted_nodes = sorted(list(valid_nodes))
         
         return pruned_graph.subgraph(sorted_nodes)
@@ -146,7 +137,6 @@ class SteelGraph:
         if pruned_graph is None or pruned_graph.number_of_nodes() <= 1: 
             return f"No steel found matching criteria.", 0, None, None
             
-        # Reconstruct weighted graph deterministically
         weighted_graph = nx.DiGraph()
         sorted_nodes = sorted(pruned_graph.nodes())
         for n in sorted_nodes:
@@ -193,7 +183,6 @@ class SteelGraph:
         if len(best_path) < 5:
              return f"Internal Error: Invalid path length.", 0, None, None
 
-        # Extract Details
         n_steel_data = weighted_graph.nodes[best_path[1]]
         n_time_data = weighted_graph.nodes[best_path[2]]
         n_temp_data = weighted_graph.nodes[best_path[3]]

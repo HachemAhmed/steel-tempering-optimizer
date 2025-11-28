@@ -10,7 +10,6 @@ def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
 
     print(f"Generating graph visualization: {output_image_filename}...")
     
-    # --- 1. Create Display Graph (Simplified) ---
     G_display = nx.DiGraph()
     
     def get_label(node_name):
@@ -33,7 +32,6 @@ def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
     all_nodes = set(G_display.nodes())
     other_nodes = list(all_nodes - path_nodes_set)
 
-    # --- 2. Plot ---
     plt.figure(figsize=(22, 14)) 
     
     try:
@@ -41,12 +39,10 @@ def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
     except Exception:
         pos = nx.spring_layout(G_display)
     
-    # Background nodes
     nx.draw_networkx_nodes(G_display, pos, nodelist=other_nodes, node_size=2000, node_color='lightblue', alpha=0.7)
     nx.draw_networkx_edges(G_display, pos, edge_color='gray', alpha=0.3, arrows=True)
     nx.draw_networkx_labels(G_display, pos, labels={n: n for n in other_nodes}, font_size=10, font_family='sans-serif', font_color='black')
-    
-    # Highlight Path
+
     path_edges = list(zip(path_display, path_display[1:]))
     nx.draw_networkx_nodes(G_display, pos, nodelist=path_display, node_color='#ff4d4d', node_size=2500, edgecolors='black') 
     nx.draw_networkx_edges(G_display, pos, edgelist=path_edges, edge_color='red', width=3, arrows=True)
@@ -115,7 +111,6 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
 
     print(f"Generating Heatmap with {len(temperatures)} points...")
 
-    # Calculate dynamic limits
     min_h = min(hardnesses)
     max_h = max(hardnesses)
     if min_h == max_h:
@@ -124,7 +119,6 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
 
     plt.figure(figsize=(10, 8))
     
-    # 1. Plot Background Points
     sc = plt.scatter(temperatures, times, c=hardnesses, cmap='RdYlBu_r', 
                      s=100, edgecolors='gray', alpha=1.0, 
                      vmin=min_h, vmax=max_h, label='Valid Options')
@@ -132,17 +126,14 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
     cbar = plt.colorbar(sc)
     cbar.set_label('Final Hardness (HRC)', rotation=270, labelpad=15)
 
-    # 2. Plot Highlight (Winner)
     if highlight_point:
         best_temp, best_time = highlight_point
         
-        # A) Redraw winner dot on top
         if winner_hardness is not None:
             plt.scatter([best_temp], [best_time], c=[winner_hardness], cmap='RdYlBu_r',
                         s=100, edgecolors='black', alpha=1.0,
                         vmin=min_h, vmax=max_h, zorder=5) 
 
-        # B) Draw Empty Circle Frame
         plt.plot(best_temp, best_time, marker='o', markersize=25, markeredgecolor='black', markerfacecolor='none', markeredgewidth=3, linestyle='None', label='Optimal Solution', zorder=10)
 
     plt.title('Solution Space: Valid Processes vs. Optimal Solution', fontsize=14)
