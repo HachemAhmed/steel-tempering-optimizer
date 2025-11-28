@@ -1,13 +1,16 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import numpy as np 
 
 def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
+    """
+    Draws and saves a simplified visualization of the filtered graph.
+    """
     if graph is None or not path or isinstance(path, str):
         return
 
-    print(f"Gerando visualização do grafo em {output_image_filename}...")
+    print(f"Generating graph visualization: {output_image_filename}...")
     
+    # --- 1. Create Display Graph (Simplified) ---
     G_display = nx.DiGraph()
     
     def get_label(node_name):
@@ -30,6 +33,7 @@ def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
     all_nodes = set(G_display.nodes())
     other_nodes = list(all_nodes - path_nodes_set)
 
+    # --- 2. Plot ---
     plt.figure(figsize=(22, 14)) 
     
     try:
@@ -37,29 +41,29 @@ def plot_filtered_graph(graph, path, cost, optimize_by, output_image_filename):
     except Exception:
         pos = nx.spring_layout(G_display)
     
+    # Background nodes
     nx.draw_networkx_nodes(G_display, pos, nodelist=other_nodes, node_size=2000, node_color='lightblue', alpha=0.7)
     nx.draw_networkx_edges(G_display, pos, edge_color='gray', alpha=0.3, arrows=True)
     nx.draw_networkx_labels(G_display, pos, labels={n: n for n in other_nodes}, font_size=10, font_family='sans-serif', font_color='black')
     
+    # Highlight Path
     path_edges = list(zip(path_display, path_display[1:]))
-    
     nx.draw_networkx_nodes(G_display, pos, nodelist=path_display, node_color='#ff4d4d', node_size=2500, edgecolors='black') 
     nx.draw_networkx_edges(G_display, pos, edgelist=path_edges, edge_color='red', width=3, arrows=True)
-    
     nx.draw_networkx_labels(G_display, pos, labels={n: n for n in path_display}, font_size=14, font_weight='bold', font_family='sans-serif')
     
-    unit = "s" if optimize_by == 'time' else "ºC"
+    unit = "s" if optimize_by == 'time' else "C" if optimize_by == 'temperature' else "(Score)"
     
-    plt.title(f"Grafo Filtrado - Otimizado por: {optimize_by.upper()}\nCusto: {cost:.2f} {unit}", fontsize=18)
+    plt.title(f"Filtered Graph - Optimization: {optimize_by.upper()}\nCost: {cost:.2f} {unit}", fontsize=18)
     plt.axis('off')
     plt.tight_layout()
     plt.savefig(output_image_filename)
     plt.close() 
-    print(f"Gráfico salvo com sucesso em {output_image_filename}")
+    print(f"Graph saved: {output_image_filename}")
 
 def plot_full_graph(graph, output_image_filename):
     if graph is None: return
-    print(f"Gerando visualização do grafo COMPLETO em {output_image_filename}...")
+    print(f"Generating FULL graph visualization: {output_image_filename}...")
     plt.figure(figsize=(25, 15)) 
     for node, data in graph.nodes(data=True):
         if node == 'SOURCE': data['layer'] = 0
@@ -70,17 +74,19 @@ def plot_full_graph(graph, output_image_filename):
         pos = nx.spring_layout(graph, k=0.15) 
     nx.draw_networkx_nodes(graph, pos, node_size=500, node_color='lightblue', alpha=0.6)
     nx.draw_networkx_edges(graph, pos, edge_color='gray', alpha=0.2, arrows=False) 
-    plt.title("Visualização do Grafo Completo", fontsize=16)
+    plt.title("Full Master Graph Visualization", fontsize=16)
     plt.axis('off')
     plt.tight_layout()
     plt.savefig(output_image_filename)
     plt.close() 
-    print(f"Grafo completo salvo com sucesso em {output_image_filename}")
+    print(f"Full graph saved.")
 
 def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, winner_hardness=None):
-    
+    """
+    Generates a Heatmap (Scatter Plot).
+    """
     if graph is None or graph.number_of_nodes() == 0:
-        print("Grafo vazio, pulando mapa de calor.")
+        print("Empty graph, skipping heatmap.")
         return
 
     temperatures = []
@@ -104,11 +110,12 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
             hardnesses.append(hardness_val)
 
     if not temperatures:
-        print("Não há dados suficientes para gerar o mapa de calor.")
+        print("Not enough data for heatmap.")
         return
 
-    print(f"Gerando Mapa de Calor com {len(temperatures)} pontos em {output_image_filename}...")
+    print(f"Generating Heatmap with {len(temperatures)} points...")
 
+    # Calculate dynamic limits
     min_h = min(hardnesses)
     max_h = max(hardnesses)
     if min_h == max_h:
@@ -116,27 +123,31 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
         max_h += 1
 
     plt.figure(figsize=(10, 8))
-
+    
+    # 1. Plot Background Points
     sc = plt.scatter(temperatures, times, c=hardnesses, cmap='RdYlBu_r', 
                      s=100, edgecolors='gray', alpha=1.0, 
-                     vmin=min_h, vmax=max_h, label='Opções Válidas')
+                     vmin=min_h, vmax=max_h, label='Valid Options')
     
     cbar = plt.colorbar(sc)
-    cbar.set_label('Dureza Final (HRC)', rotation=270, labelpad=15)
+    cbar.set_label('Final Hardness (HRC)', rotation=270, labelpad=15)
 
+    # 2. Plot Highlight (Winner)
     if highlight_point:
         best_temp, best_time = highlight_point
-
+        
+        # A) Redraw winner dot on top
         if winner_hardness is not None:
             plt.scatter([best_temp], [best_time], c=[winner_hardness], cmap='RdYlBu_r',
                         s=100, edgecolors='black', alpha=1.0,
                         vmin=min_h, vmax=max_h, zorder=5) 
 
-        plt.plot(best_temp, best_time, marker='o', markersize=25, markeredgecolor='black', markerfacecolor='none', markeredgewidth=3, linestyle='None', label='Solução Otimizada', zorder=10)
+        # B) Draw Empty Circle Frame
+        plt.plot(best_temp, best_time, marker='o', markersize=25, markeredgecolor='black', markerfacecolor='none', markeredgewidth=3, linestyle='None', label='Optimal Solution', zorder=10)
 
-    plt.title('Espaço de Solução: Processos Válidos vs. Solução Otimizada', fontsize=14)
-    plt.xlabel('Temperatura de Revenimento (ºC)', fontsize=12)
-    plt.ylabel('Tempo de Revenimento (s)', fontsize=12)
+    plt.title('Solution Space: Valid Processes vs. Optimal Solution', fontsize=14)
+    plt.xlabel('Tempering Temperature (C)', fontsize=12)
+    plt.ylabel('Tempering Time (s)', fontsize=12)
     
     lgnd = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, borderaxespad=0.)
     
@@ -149,8 +160,7 @@ def plot_hardness_heatmap(graph, output_image_filename, highlight_point=None, wi
         except AttributeError: pass
 
     plt.grid(True, linestyle='--', alpha=0.5)
-
     plt.tight_layout() 
     plt.savefig(output_image_filename, bbox_inches='tight') 
     plt.close()
-    print(f"Mapa de calor salvo em {output_image_filename}")
+    print(f"Heatmap saved: {output_image_filename}")

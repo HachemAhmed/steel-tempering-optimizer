@@ -5,17 +5,27 @@ import os
 
 class SteelGraph:
     def __init__(self, preprocessed_data_path):
+        """
+        Initializes the graph by loading the preprocessed data.
+        """
         try:
             self.df = pd.read_csv(preprocessed_data_path)
+            
+            # Calculate global maximums for normalization
+            self.max_time = self.df['Tempering time (s)'].max()
+            self.max_temp = self.df['Tempering temperature (ºC)'].max()
+            
             self.graph = nx.DiGraph() 
             self._build_master_graph()
-            
         except FileNotFoundError:
-            print(f"Erro: Arquivo de dados '{preprocessed_data_path}' não encontrado.")
             self.df = None
             self.graph = None
+            raise 
 
     def _build_master_graph(self):
+        """
+        Builds the precise master graph with all 1196 processes.
+        """
         if self.df is None: return
             
         self.graph.add_node('SOURCE', layer=0)
@@ -30,14 +40,17 @@ class SteelGraph:
             tmp = row['Tempering temperature (ºC)']
             h = row['Final hardness (HRC) - post tempering']
 
-            n_steel = f"Aço: {s}"
-            n_time = f"Tempo: {t} s | id:{i}"  
+            # Unique Node Names to prevent phantom paths
+            n_steel = f"Steel: {s}"
+            n_time = f"Time: {t} s | id:{i}"  
             n_temp = f"Temp: {tmp} C | id:{i}" 
-            n_hardness = f"Dureza: {h} HRC" 
+            n_hardness = f"Hardness: {h} HRC" 
 
+            # Add Nodes
             if not self.graph.has_node(n_steel):
                 comp_data = steel_compositions.loc[s].to_dict() 
                 comp_data['steel_type'] = s 
+                comp_data['Steel type'] = s 
                 self.graph.add_node(n_steel, layer=1, type='steel', **comp_data)
                 self.graph.add_edge('SOURCE', n_steel) 
             
@@ -45,32 +58,54 @@ class SteelGraph:
             if not self.graph.has_node(n_temp): self.graph.add_node(n_temp, layer=3, type='temp', value=tmp)
             if not self.graph.has_node(n_hardness): self.graph.add_node(n_hardness, layer=4, type='hardness', value=h)
 
+            # Add Edges
             self.graph.add_edge(n_steel, n_time, time=t)
             self.graph.add_edge(n_time, n_temp, temperature=tmp)
             self.graph.add_edge(n_temp, n_hardness)
             self.graph.add_edge(n_hardness, 'SINK') 
 
     def _prune_graph(self, filters):
+        """
+        Graph Pruning Algorithm.
+        Removes nodes that do not meet the criteria.
+        """
         pruned_graph = self.graph.copy()
         nodes_to_remove = set()
         
         comp_filters = {k: v for k, v in filters.items() if '%wt' in k}
         exact_filters = {k: v for k, v in filters.items() if '%wt' not in k and '_range' not in k}
 
+        # 1. Prune Steel Layer (Composition & Exact Type)
         for node, data in pruned_graph.nodes(data=True):
             if data.get('type') == 'steel':
+                # Composition Filters
                 for col, op_val in comp_filters.items():
                     if col not in data: continue 
-                    op, val = op_val['op'], op_val['val']
+                    
+                    if isinstance(op_val, dict):
+                        op = op_val.get('op')
+                        val = op_val.get('val')
+                    else: continue
+
                     steel_val = data[col]
-                    if (op == '>' and not steel_val > val) or (op == '<' and not steel_val < val) or (op == '==' and not steel_val == val):
-                        nodes_to_remove.add(node); break 
+                    try:
+                        if (op == '>' and not steel_val > val) or \
+                           (op == '<' and not steel_val < val) or \
+                           (op == '==' and not steel_val == val):
+                            nodes_to_remove.add(node); break
+                    except Exception: continue
+
                 if node in nodes_to_remove: continue 
+                
+                # Exact Filters (e.g. steel_type)
                 for col, val in exact_filters.items():
-                    if col in data and data[col] != val:
-                        nodes_to_remove.add(node); break
+                    if col in data:
+                        if data[col] != val:
+                            nodes_to_remove.add(node); break
+                    
         pruned_graph.remove_nodes_from(nodes_to_remove)
 
+        # 2. Prune by Range (Time, Temp, Hardness)
         nodes_to_remove = set()
         range_filters = {'time': filters.get('time_range'), 'temp': filters.get('temperature_range'), 'hardness': filters.get('hardness_range')}
         
@@ -82,6 +117,7 @@ class SteelGraph:
                     nodes_to_remove.add(node)
         pruned_graph.remove_nodes_from(nodes_to_remove)
         
+        # 3. Clean up Orphans
         target_nodes = [n for n, d in pruned_graph.nodes(data=True) if d.get('type') == 'hardness']
         if not target_nodes: return None
 
@@ -95,25 +131,51 @@ class SteelGraph:
         valid_nodes.add('SOURCE') 
         valid_nodes.update(target_nodes) 
         
-        return pruned_graph.subgraph(valid_nodes)
+        # Deterministic Sorting
+        sorted_nodes = sorted(list(valid_nodes))
+        
+        return pruned_graph.subgraph(sorted_nodes)
 
-    def find_best_process(self, filters, optimize_by='time'):
-        if self.graph is None: return "Grafo mestre não foi construído.", 0, None, None
+    def find_best_process(self, filters, optimize_by='time', alpha=0.5):
+        """
+        Main algorithm: Pruning + Dijkstra Optimization.
+        """
+        if self.graph is None: return "Master graph not built.", 0, None, None
 
         pruned_graph = self._prune_graph(filters)
         if pruned_graph is None or pruned_graph.number_of_nodes() <= 1: 
-            return f"Nenhum aço encontrado.", 0, None, None
+            return f"No steel found matching criteria.", 0, None, None
             
-        
-
-        weighted_graph = pruned_graph.copy()
-        for u, v, data in weighted_graph.edges(data=True):
-            data['weight'] = 0.0 
-            if optimize_by == 'time' and 'time' in data: data['weight'] = data['time']
-            elif optimize_by == 'temperature' and 'temperature' in data: data['weight'] = data['temperature']
+        # Reconstruct weighted graph deterministically
+        weighted_graph = nx.DiGraph()
+        sorted_nodes = sorted(pruned_graph.nodes())
+        for n in sorted_nodes:
+            weighted_graph.add_node(n, **pruned_graph.nodes[n])
+            
+        for u in sorted_nodes:
+            neighbors = sorted(pruned_graph.successors(u))
+            for v in neighbors:
+                edge_data = pruned_graph[u][v].copy()
+                edge_data['weight'] = 0.0
+                
+                if optimize_by == 'time' and 'time' in edge_data: 
+                    edge_data['weight'] = edge_data['time']
+                elif optimize_by == 'temperature' and 'temperature' in edge_data: 
+                    edge_data['weight'] = edge_data['temperature']
+                elif optimize_by == 'balanced':
+                    if 'time' in edge_data:
+                        norm_time = edge_data['time'] / self.max_time
+                        edge_data['weight'] = alpha * norm_time
+                    elif 'temperature' in edge_data:
+                        norm_temp = edge_data['temperature'] / self.max_temp
+                        edge_data['weight'] = (1 - alpha) * norm_temp
+                
+                weighted_graph.add_edge(u, v, **edge_data)
         
         final_target_nodes = [n for n, d in weighted_graph.nodes(data=True) if d.get('type') == 'hardness']
-        if not final_target_nodes: return "Nenhum caminho completo.", 0, None, None
+        final_target_nodes.sort()
+        
+        if not final_target_nodes: return "No complete path found.", 0, None, None
 
         best_path = None
         best_cost = float('inf')
@@ -126,22 +188,30 @@ class SteelGraph:
                     best_path = nx.shortest_path(weighted_graph, 'SOURCE', target, 'weight')
             except nx.NetworkXNoPath: continue 
 
-        if best_path is None: return f"Nenhum caminho alcançável.", 0, None, None
+        if best_path is None: return f"No reachable path found.", 0, None, None
 
+        if len(best_path) < 5:
+             return f"Internal Error: Invalid path length.", 0, None, None
+
+        # Extract Details
         n_steel_data = weighted_graph.nodes[best_path[1]]
         n_time_data = weighted_graph.nodes[best_path[2]]
         n_temp_data = weighted_graph.nodes[best_path[3]]
         n_hardness_data = weighted_graph.nodes[best_path[4]]
         
         comp_cols = [c for c in self.df.columns if '%wt' in c]
-        composition_dict = {k: float(v) for k, v in n_steel_data.items() if k in comp_cols}
+        composition_dict = {}
+        for k, v in n_steel_data.items():
+            if k in comp_cols:
+                try: composition_dict[k] = float(v)
+                except (TypeError, ValueError): composition_dict[k] = 0.0
 
         result_details = {
-            'Aço Encontrado': n_steel_data['steel_type'],
-            'Dureza Final (HRC)': n_hardness_data['value'],
-            'Temp. Revenimento (C)': n_temp_data['value'],
-            'Tempo Revenimento (s)': n_time_data['value'],
-            'Composição Química': composition_dict
+            'Found Steel': n_steel_data.get('steel_type', 'Unknown'),
+            'Final Hardness (HRC)': n_hardness_data['value'],
+            'Temp (C)': n_temp_data['value'],
+            'Time (s)': n_time_data['value'],
+            'Composition': composition_dict
         }
         
         return best_path, best_cost, pruned_graph, result_details

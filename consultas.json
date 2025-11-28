@@ -1,67 +1,76 @@
 [
   {
-    "nome_consulta": "Teste_1_Padrao_Otimizado_Tempo",
-    "otimizar_por": "time",
-    "filtros": {
-      "hardness_range": {"min": 45, "max": 47},
-      "temperature_range": {"min": 400, "max": 420}
+    "query_name": "Test_1_Standard_Optimize_Time",
+    "optimize_by": "time",
+    "filters": {
+      "hardness_range": {"min": 45, "max": 50},
+      "temperature_range": {"min": 400, "max": 450}
     }
   },
   {
-    "nome_consulta": "Teste_2_Padrao_Otimizado_Temperatura",
-    "otimizar_por": "temperature",
-    "filtros": {
+    "query_name": "Test_2_Standard_Optimize_Temperature",
+    "optimize_by": "temperature",
+    "filters": {
       "hardness_range": {"min": 55, "max": 60},
       "time_range": {"min": 600.0, "max": 600.0}
     }
   },
   {
-    "nome_consulta": "Teste_3_Aco_Liga_Alto_Cromo",
-    "otimizar_por": "time",
-    "filtros": {
+    "query_name": "Test_3_High_Chromium_Alloy",
+    "optimize_by": "time",
+    "filters": {
       "hardness_range": {"min": 50, "max": 55},
       "C (%wt)": {"op": ">", "val": 0.5},
       "Cr (%wt)": {"op": ">", "val": 0.7}
     }
   },
   {
-    "nome_consulta": "Teste_4_Impossivel_Dureza_Alta_Carbono_Baixo",
-    "otimizar_por": "time",
-    "filtros": {
+    "query_name": "Test_4_Impossible_Constraints",
+    "optimize_by": "time",
+    "filters": {
       "hardness_range": {"min": 60, "max": 65},
       "C (%wt)": {"op": "<", "val": 0.1}
     }
   },
   {
-    "nome_consulta": "Teste_5_Baixa_Dureza_Alta_Temperatura",
-    "otimizar_por": "temperature",
-    "filtros": {
+    "query_name": "Test_5_Low_Hardness_High_Temp",
+    "optimize_by": "temperature",
+    "filters": {
       "hardness_range": {"min": 15, "max": 20},
       "temperature_range": {"min": 650, "max": 700}
     }
   },
   {
-    "nome_consulta": "Teste_6_Tempo_Longo_24h",
-    "otimizar_por": "temperature",
-    "filtros": {
+    "query_name": "Test_6_Long_Duration_24h",
+    "optimize_by": "temperature",
+    "filters": {
       "hardness_range": {"min": 35, "max": 40},
       "time_range": {"min": 86400.0, "max": 86400.0}
     }
   },
   {
-    "nome_consulta": "Teste_7_Aco_Especifico_1045",
-    "otimizar_por": "time",
-    "filtros": {
+    "query_name": "Test_7_Specific_Steel_1045",
+    "optimize_by": "time",
+    "filters": {
       "hardness_range": {"min": 45, "max": 50},
       "steel_type": "AISI-SAE 1045"
     }
   },
   {
-    "nome_consulta": "Teste_8_Heatmap_Amplo_4140",
-    "otimizar_por": "time",
-    "filtros": {
+    "query_name": "Test_8_Broad_Heatmap_4140",
+    "optimize_by": "time",
+    "filters": {
       "hardness_range": {"min": 20, "max": 60},
       "steel_type": "AISI-SAE 4140"
+    }
+  },
+  {
+    "query_name": "Test_9_Balanced_Optimization",
+    "optimize_by": "balanced",
+    "alpha": 0.5,
+    "filters": {
+      "hardness_range": {"min": 40, "max": 45},
+      "C (%wt)": {"op": "<", "val": 0.5}
     }
   }
 ]
