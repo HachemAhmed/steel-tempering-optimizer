@@ -23,9 +23,12 @@ def log_error(message, level='ERROR', exc_info=None):
     else: logging.error(message, exc_info=exc_info)
 
 if __name__ == "__main__":
+    
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.dirname(script_dir)
     LOG_FILE_PATH = os.path.join(root_dir, 'error_log.txt')
+    
+    # Silent Mode (Background execution)
     sys.stdout = NullWriter()
 
     try:
@@ -41,6 +44,7 @@ if __name__ == "__main__":
         output_dir = os.path.join(root_dir, 'outputs')
         os.makedirs(output_dir, exist_ok=True)
 
+        # Data Verification
         if not os.path.exists(preprocessed_data_path):
             if not os.path.exists(original_data_path):
                 log_error(f"Original file not found at: {original_data_path}", level='CRITICAL')
@@ -48,18 +52,20 @@ if __name__ == "__main__":
             try:
                 success = preprocess.main()
                 if not success:
-                    log_error("Preprocess script failed.")
+                    log_error("Preprocessing failed.")
                     sys.exit(1)
             except Exception as e:
                 log_error(f"Error during preprocessing: {e}", exc_info=True)
                 sys.exit(1)
         
+        # Cleanup
         extensions = ["*.png", "*.jpg", "*.txt"]
         for ext in extensions:
             for f in glob.glob(os.path.join(output_dir, ext)):
                 try: os.remove(f)
                 except: pass
 
+        # Load Config
         try:
             with open(queries_config_path, 'r', encoding='utf-8') as f:
                 consultas = json.load(f)
@@ -67,6 +73,7 @@ if __name__ == "__main__":
             log_error(f"Error reading consultas.json: {e}", level='CRITICAL')
             sys.exit(1)
 
+        # Init Engine
         try:
             meu_grafo_de_acos = SteelGraph(preprocessed_data_path)
             if not meu_grafo_de_acos.graph:
@@ -80,8 +87,9 @@ if __name__ == "__main__":
             output_path_main = os.path.join(output_dir, 'main_full_graph.png')
             plot_full_graph(meu_grafo_de_acos.get_master_graph(), output_path_main)
         except Exception as e:
-            log_error(f"Error plotting full graph: {e}")
+            log_error(f"Error generating full graph image: {e}")
         
+        # Run Queries
         for i, consulta in enumerate(consultas):
             nome_consulta = consulta.get('query_name', f'Query_{i}')
             filtros = consulta.get('filters', {})
@@ -94,7 +102,6 @@ if __name__ == "__main__":
             output_path_relatorio = os.path.join(output_dir, relatorio_filename)
             
             if not filtros:
-                log_error(f"Query '{nome_consulta}' skipped: No filters.", level='WARNING')
                 continue
             
             try:
@@ -111,6 +118,7 @@ if __name__ == "__main__":
                 except: pass
                 continue 
 
+            # Write Report
             try:
                 with open(output_path_relatorio, 'w', encoding='utf-8') as f:
                     f.write("="*60 + "\n")
@@ -167,15 +175,15 @@ if __name__ == "__main__":
                             f.write(f"  Time Process:      {detalhes.get('Time (s)')} s\n")
                             
                             if 'Composition' in detalhes:
-                                f.write(f"\n  Chemical Composition (wt%):\n")
-                                comp = detalhes['Composition']
-                                for elem, qtd in comp.items():
+                                f.write(f"\n  Composition (%):\n")
+                                for elem, qtd in detalhes['Composition'].items():
                                     clean_elem = elem.replace(" (%wt)", "")
                                     f.write(f"    {clean_elem:<4}: {qtd}\n")
                     f.write("\n" + "="*60 + "\n")
             except Exception as e:
                 log_error(f"Error writing report for '{nome_consulta}': {e}")
 
+            # Graphs
             if grafo_podado is not None and grafo_podado.number_of_nodes() > 0:
                 try:
                     plot_filtered_graph(grafo_podado, caminho, custo, otimizar_por, output_path_consulta)
@@ -197,4 +205,4 @@ if __name__ == "__main__":
                     log_error(f"Error plotting heatmap '{nome_consulta}': {e}")
 
     except Exception as e:
-        log_error("Fatal error in main execution:", exc_info=True)
+        log_error("Fatal error in main execution loop.", exc_info=True)

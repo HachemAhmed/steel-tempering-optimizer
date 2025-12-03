@@ -72,5 +72,15 @@
       "hardness_range": {"min": 40, "max": 45},
       "C (%wt)": {"op": "<", "val": 0.5}
     }
+  },
+  {
+    "query_name": "Test_10_Balanced_Tradeoff",
+    "optimize_by": "balanced",
+    "alpha": 0.3,
+    "filters": {
+      "hardness_range": {"min": 40, "max": 50},
+      "C (%wt)": {"op": ">", "val": 0.3},
+      "Mn (%wt)": {"op": "<", "val": 0.9}
+    }
   }
 ]
