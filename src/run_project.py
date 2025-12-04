@@ -1,208 +1,293 @@
+"""
+Main execution script for steel heat treatment optimization.
+Orchestrates the complete pipeline: preprocessing, graph construction,
+query execution, and output generation.
+"""
 import os
 import json
 import glob
 import sys
-import logging
+import config
+from utils import log_error, NullWriter
+from graph_visualizer import plot_filtered_graph, plot_full_graph, plot_hardness_heatmap
+from reporter import generate_text_report
 
-class NullWriter:
-    def write(self, text): pass
-    def flush(self): pass
 
-LOG_FILE_PATH = ""
+# ============================================================================
+# VALIDATION
+# ============================================================================
 
-def log_error(message, level='ERROR', exc_info=None):
-    if not logging.getLogger().hasHandlers():
-        logging.basicConfig(
-            filename=LOG_FILE_PATH,
-            level=logging.WARNING,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-    if level == 'CRITICAL': logging.critical(message, exc_info=exc_info)
-    elif level == 'WARNING': logging.warning(message, exc_info=exc_info)
-    else: logging.error(message, exc_info=exc_info)
+def validate_query(query, index):
+    """
+    Validates query structure and parameters.
+    
+    Args:
+        query: Query dictionary from consultas.json
+        index: Query position in the list (for error messages)
+        
+    Returns:
+        Validated query dict or None if invalid
+    """
+    required = ['query_name', 'optimize_by', 'filters']
+    
+    for key in required:
+        if key not in query:
+            log_error(f"Query #{index}: Missing required field '{key}'", level='WARNING')
+            return None
+    
+    valid_optimizations = ['time', 'temperature', 'balanced']
+    if query['optimize_by'] not in valid_optimizations:
+        log_error(f"Query #{index} ('{query['query_name']}'): Invalid optimize_by", level='WARNING')
+        return None
+    
+    # Set default alpha for balanced optimization
+    if query['optimize_by'] == 'balanced' and 'alpha' not in query:
+        query['alpha'] = 0.5
+    
+    if not query['filters']:
+        log_error(f"Query #{index} ('{query['query_name']}'): Empty filters", level='WARNING')
+        return None
+    
+    return query
+
+
+# ============================================================================
+# QUERY EXECUTION
+# ============================================================================
+
+def execute_query(graph, query, output_dir):
+    """
+    Executes a complete query: runs algorithm, generates report and visualizations.
+    
+    Args:
+        graph: SteelGraph instance
+        query: Validated query dictionary
+        output_dir: Output directory path
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    nome = query['query_name']
+    filtros = query['filters']
+    optimize_by = query['optimize_by']
+    alpha = query.get('alpha', 0.5)
+    
+    # Step 1: Run optimization algorithm
+    result = _run_algorithm(graph, nome, filtros, optimize_by, alpha)
+    if result is None:
+        return False
+    
+    paths, custo, grafo_podado, details_list, success = result
+    
+    # Step 2: Generate report (using reporter.py module)
+    report_path = os.path.join(output_dir, f"{nome}_report.txt")
+    if success:
+        result_data = (paths, custo, grafo_podado, details_list)
+    else:
+        result_data = paths  # Error string
+    
+    generate_text_report(report_path, nome, optimize_by, filtros, result_data, alpha)
+    
+    # Step 3: Generate visualizations (only if results exist)
+    if success and grafo_podado and grafo_podado.number_of_nodes() > 0:
+        _generate_visualizations(output_dir, nome, paths, custo, optimize_by, 
+                                grafo_podado, details_list)
+    
+    return success
+
+
+def _run_algorithm(graph, nome, filtros, optimize_by, alpha):
+    """
+    Executes the optimization algorithm.
+    
+    Returns:
+        Tuple: (paths, cost, pruned_graph, details_list, success_flag)
+               or (error_string, 0, None, [], False) on failure
+    """
+    try:
+        result = graph.find_best_process(filtros, optimize_by=optimize_by, alpha=alpha)
+        
+        if isinstance(result, tuple):
+            paths, custo, grafo_podado, details_list = result
+            return paths, custo, grafo_podado, details_list, True
+        else:
+            log_error(f"Query '{nome}' returned error: {result}", level='WARNING')
+            return result, 0, None, [], False
+            
+    except Exception as e:
+        log_error(f"Error processing '{nome}': {e}", exc_info=True)
+        return f"Execution error: {str(e)}", 0, None, [], False
+
+
+def _generate_visualizations(output_dir, nome, paths, custo, optimize_by, 
+                             grafo_podado, details_list):
+    """
+    Generates graph diagram and heatmap visualizations.
+    """
+    # Graph visualization
+    try:
+        output_path = os.path.join(output_dir, f"{nome}_graph.png")
+        first_path = paths[0] if isinstance(paths, list) else None
+        plot_filtered_graph(grafo_podado, first_path, custo, optimize_by, output_path)
+    except Exception as e:
+        log_error(f"Error plotting graph '{nome}': {e}")
+    
+    # Heatmap visualization
+    try:
+        output_path = os.path.join(output_dir, f"{nome}_heatmap.png")
+        highlight_points = [(d['Temp (C)'], d['Time (s)']) 
+                           for d in details_list if isinstance(details_list, list)]
+        plot_hardness_heatmap(grafo_podado, output_path, highlight_points=highlight_points)
+    except Exception as e:
+        log_error(f"Error plotting heatmap '{nome}': {e}")
+
+
+# ============================================================================
+# SETUP AND INITIALIZATION
+# ============================================================================
+
+def setup_environment():
+    """
+    Configures initial environment: clears logs, silences stdout, 
+    creates output directory, and clears old outputs.
+    """
+    # Clear previous log file
+    if os.path.exists(config.LOG_FILE_PATH):
+        try: 
+            os.remove(config.LOG_FILE_PATH)
+        except: 
+            pass
+    
+    # Suppress stdout (keeps console clean)
+    sys.stdout = NullWriter()
+    
+    # Create output directory
+    os.makedirs(config.OUTPUT_DIR, exist_ok=True)
+    
+    # Clear old output files
+    for ext in ["*.png", "*.jpg", "*.txt"]:
+        for f in glob.glob(os.path.join(config.OUTPUT_DIR, ext)):
+            try: 
+                os.remove(f)
+            except: 
+                pass
+
+
+def load_and_validate_queries():
+    """
+    Loads and validates queries from consultas.json.
+    
+    Returns:
+        List of valid query dictionaries or None on failure
+    """
+    try:
+        with open(config.QUERIES_PATH, 'r', encoding='utf-8') as f:
+            consultas_raw = json.load(f)
+        
+        if not isinstance(consultas_raw, list):
+            log_error("consultas.json must contain a list of queries", level='CRITICAL')
+            return None
+        
+        # Validate each query
+        consultas = []
+        for idx, query in enumerate(consultas_raw):
+            validated = validate_query(query, idx)
+            if validated:
+                consultas.append(validated)
+        
+        if not consultas:
+            log_error("No valid queries found", level='CRITICAL')
+            return None
+        
+        return consultas
+        
+    except FileNotFoundError:
+        log_error(f"consultas.json not found at: {config.QUERIES_PATH}", level='CRITICAL')
+        return None
+    except json.JSONDecodeError as e:
+        log_error(f"Invalid JSON: {e}", level='CRITICAL')
+        return None
+    except Exception as e:
+        log_error(f"Error reading consultas.json: {e}", level='CRITICAL')
+        return None
+
+
+def initialize_graph():
+    """
+    Initializes the master steel graph.
+    Runs preprocessing if needed, then constructs the graph.
+    
+    Returns:
+        SteelGraph instance or None on failure
+    """
+    from steel_graph import SteelGraph
+    import preprocess
+    
+    # Run preprocessing if processed data doesn't exist
+    if not os.path.exists(config.PROCESSED_DATA_PATH):
+        if not os.path.exists(config.RAW_DATA_PATH):
+            log_error(f"Raw file not found: {config.RAW_DATA_PATH}", level='CRITICAL')
+            return None
+        try:
+            if not preprocess.main():
+                log_error("Preprocessing failed", level='CRITICAL')
+                return None
+        except Exception as e:
+            log_error(f"Preprocessing error: {e}", exc_info=True, level='CRITICAL')
+            return None
+    
+    # Build master graph
+    try:
+        graph = SteelGraph(config.PROCESSED_DATA_PATH)
+        if not graph.graph:
+            log_error("Master Graph empty", level='CRITICAL')
+            return None
+        
+        # Generate full graph visualization
+        try:
+            output_path = os.path.join(config.OUTPUT_DIR, 'main_full_graph.png')
+            plot_full_graph(graph.get_master_graph(), output_path)
+        except Exception as e:
+            log_error(f"Error generating full graph: {e}")
+        
+        return graph
+        
+    except Exception as e:
+        log_error(f"Error building graph: {e}", exc_info=True, level='CRITICAL')
+        return None
+
+
+# ============================================================================
+# MAIN
+# ============================================================================
+
+def main():
+    """
+    Main execution function: orchestrates the complete optimization pipeline.
+    """
+    setup_environment()
+    
+    consultas = load_and_validate_queries()
+    if consultas is None:
+        sys.exit(1)
+    
+    graph = initialize_graph()
+    if graph is None:
+        sys.exit(1)
+    
+    # Execute each query
+    for query in consultas:
+        try:
+            execute_query(graph, query, config.OUTPUT_DIR)
+        except Exception as e:
+            log_error(f"Fatal error in query '{query.get('query_name')}': {e}", exc_info=True)
+            continue
+
 
 if __name__ == "__main__":
-    
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.dirname(script_dir)
-    LOG_FILE_PATH = os.path.join(root_dir, 'error_log.txt')
-    
-    # Silent Mode (Background execution)
-    sys.stdout = NullWriter()
-
     try:
-        from steel_graph import SteelGraph
-        from graph_visualizer import plot_filtered_graph, plot_full_graph, plot_hardness_heatmap
-        import preprocess 
-
-        datasets_dir = os.path.join(root_dir, 'datasets')
-        original_data_path = os.path.join(datasets_dir, 'Tempering data for carbon and low alloy steels - Raiipa(in).csv')
-        preprocessed_data_path = os.path.join(datasets_dir, 'preprocessed_steel_data.csv') 
-        
-        queries_config_path = os.path.join(root_dir, 'consultas.json')
-        output_dir = os.path.join(root_dir, 'outputs')
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Data Verification
-        if not os.path.exists(preprocessed_data_path):
-            if not os.path.exists(original_data_path):
-                log_error(f"Original file not found at: {original_data_path}", level='CRITICAL')
-                sys.exit(1)
-            try:
-                success = preprocess.main()
-                if not success:
-                    log_error("Preprocessing failed.")
-                    sys.exit(1)
-            except Exception as e:
-                log_error(f"Error during preprocessing: {e}", exc_info=True)
-                sys.exit(1)
-        
-        # Cleanup
-        extensions = ["*.png", "*.jpg", "*.txt"]
-        for ext in extensions:
-            for f in glob.glob(os.path.join(output_dir, ext)):
-                try: os.remove(f)
-                except: pass
-
-        # Load Config
-        try:
-            with open(queries_config_path, 'r', encoding='utf-8') as f:
-                consultas = json.load(f)
-        except Exception as e:
-            log_error(f"Error reading consultas.json: {e}", level='CRITICAL')
-            sys.exit(1)
-
-        # Init Engine
-        try:
-            meu_grafo_de_acos = SteelGraph(preprocessed_data_path)
-            if not meu_grafo_de_acos.graph:
-                log_error("Master Graph initialized but empty.", level='CRITICAL')
-                sys.exit(1)
-        except Exception as e:
-            log_error(f"Fatal error building Master Graph: {e}", exc_info=True)
-            sys.exit(1)
-            
-        try:
-            output_path_main = os.path.join(output_dir, 'main_full_graph.png')
-            plot_full_graph(meu_grafo_de_acos.get_master_graph(), output_path_main)
-        except Exception as e:
-            log_error(f"Error generating full graph image: {e}")
-        
-        # Run Queries
-        for i, consulta in enumerate(consultas):
-            nome_consulta = consulta.get('query_name', f'Query_{i}')
-            filtros = consulta.get('filters', {})
-            otimizar_por = consulta.get('optimize_by', 'time')
-            alpha = consulta.get('alpha', 0.5)
-            
-            imagem_saida = f"{nome_consulta}_graph.png"
-            output_path_consulta = os.path.join(output_dir, imagem_saida)
-            relatorio_filename = f"{nome_consulta}_report.txt"
-            output_path_relatorio = os.path.join(output_dir, relatorio_filename)
-            
-            if not filtros:
-                continue
-            
-            try:
-                caminho, custo, grafo_podado, detalhes = meu_grafo_de_acos.find_best_process(
-                    filtros, 
-                    optimize_by=otimizar_por,
-                    alpha=alpha
-                )
-            except Exception as e:
-                log_error(f"Error processing algorithm for '{nome_consulta}': {e}", exc_info=True)
-                try:
-                    with open(output_path_relatorio, 'w', encoding='utf-8') as f:
-                        f.write(f"EXECUTION ERROR:\nDetails: {e}")
-                except: pass
-                continue 
-
-            # Write Report
-            try:
-                with open(output_path_relatorio, 'w', encoding='utf-8') as f:
-                    f.write("="*60 + "\n")
-                    f.write(f"TECHNICAL REPORT: {nome_consulta}\n")
-                    f.write("="*60 + "\n\n")
-                    
-                    f.write("1. SEARCH PARAMETERS\n")
-                    f.write("-" * 30 + "\n")
-                    f.write(f"Optimization Goal: {otimizar_por.upper()} (Minimize)\n")
-                    if otimizar_por == 'balanced':
-                        f.write(f"Alpha (Time Weight): {alpha}\n")
-                        f.write(f"Beta (Temp Weight): {1-alpha:.1f}\n")
-
-                    f.write("Filters Applied:\n")
-                    for k, v in filtros.items():
-                        if isinstance(v, dict):
-                            if 'min' in v: val_str = f"Between {v['min']} and {v['max']}"
-                            elif 'op' in v: val_str = f"{v['op']} {v['val']}"
-                            else: val_str = str(v)
-                        else: val_str = str(v)
-                        f.write(f"  - {k}: {val_str}\n")
-                    f.write("\n")
-                    
-                    f.write("2. OPTIMIZATION RESULTS (DIJKSTRA)\n")
-                    f.write("-" * 30 + "\n")
-                    
-                    if isinstance(caminho, str):
-                        f.write(f"STATUS: NOT FOUND\n")
-                        f.write(f"Reason: {caminho}\n")
-                    else:
-                        if otimizar_por == 'time': unit = "s"
-                        elif otimizar_por == 'temperature': unit = "C"
-                        else: unit = "(Score)"
-                        
-                        f.write(f"STATUS: OPTIMAL SOLUTION FOUND\n")
-                        f.write(f"Total Cost: {custo:.2f} {unit}\n\n")
-                        
-                        caminho_limpo = []
-                        for node in caminho:
-                            clean_name = node.split("|")[0].strip() if "|" in node else node
-                            if clean_name == 'SOURCE': clean_name = 'Start'
-                            if clean_name == 'SINK': clean_name = 'End'
-                            caminho_limpo.append(clean_name)
-                        
-                        f.write("Process Flow:\n")
-                        f.write(" -> ".join(caminho_limpo) + "\n\n")
-                        
-                        if detalhes:
-                            f.write("3. SELECTED STEEL SPECS\n")
-                            f.write("-" * 30 + "\n")
-                            f.write(f"  Steel Type:        {detalhes.get('Found Steel')}\n")
-                            f.write(f"  Final Hardness:    {detalhes.get('Final Hardness (HRC)')} HRC\n")
-                            f.write(f"  Temp Process:      {detalhes.get('Temp (C)')} C\n")
-                            f.write(f"  Time Process:      {detalhes.get('Time (s)')} s\n")
-                            
-                            if 'Composition' in detalhes:
-                                f.write(f"\n  Composition (%):\n")
-                                for elem, qtd in detalhes['Composition'].items():
-                                    clean_elem = elem.replace(" (%wt)", "")
-                                    f.write(f"    {clean_elem:<4}: {qtd}\n")
-                    f.write("\n" + "="*60 + "\n")
-            except Exception as e:
-                log_error(f"Error writing report for '{nome_consulta}': {e}")
-
-            # Graphs
-            if grafo_podado is not None and grafo_podado.number_of_nodes() > 0:
-                try:
-                    plot_filtered_graph(grafo_podado, caminho, custo, otimizar_por, output_path_consulta)
-                except Exception as e:
-                    log_error(f"Error plotting graph '{nome_consulta}': {e}")
-
-                try:
-                    heatmap_filename = f"{nome_consulta}_heatmap.png"
-                    output_path_heatmap = os.path.join(output_dir, heatmap_filename)
-                    
-                    coords_vencedor = None
-                    hardness_vencedor = None
-                    if detalhes:
-                        coords_vencedor = (detalhes['Temp (C)'], detalhes['Time (s)'])
-                        hardness_vencedor = detalhes.get('Final Hardness (HRC)')
-                    
-                    plot_hardness_heatmap(grafo_podado, output_path_heatmap, highlight_point=coords_vencedor, winner_hardness=hardness_vencedor)
-                except Exception as e:
-                    log_error(f"Error plotting heatmap '{nome_consulta}': {e}")
-
+        main()
     except Exception as e:
-        log_error("Fatal error in main execution loop.", exc_info=True)
+        log_error("Fatal error in main execution", exc_info=True)
+        sys.exit(1)
+    

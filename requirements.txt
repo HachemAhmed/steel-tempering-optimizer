@@ -1,0 +1,14 @@
+# Steel Heat Treatment Optimization - Dependencies
+# Python 3.8+
+
+# Core data processing
+pandas>=2.0.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# Graph algorithms
+networkx>=3.0
+
+# Visualization
+matplotlib>=3.7.0
