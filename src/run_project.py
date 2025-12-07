@@ -102,23 +102,37 @@ def _generate_visualizations(output_dir, nome, paths, custo, optimize_by,
                              grafo_podado, details_list):
     """
     Generates visual outputs:
-    1. Comparison graph (all optimal paths with curved edges)
-    2. Interactive heatmap (HTML with hover tooltips showing full statistics)
+    1. Comparison graph (PNG)
+    2. Interactive heatmap (HTML) - Saved to both output_dir AND docs/heatmaps/
     """
-    # 1. Comparison Graph
+    # 1. Comparison Graph (Mantido igual)
     try:
         output_path = os.path.join(output_dir, f"{nome}_graph.png")
         plot_filtered_graph_comparison(grafo_podado, paths, custo, optimize_by, output_path)
     except Exception as e:
         log_error(f"Error plotting comparison graph '{nome}': {e}")
     
-    # 2. Interactive Heatmap (generates HTML + PNG automatically)
+    # 2. Interactive Heatmap (ATUALIZADO PARA GITHUB PAGES)
     try:
-        output_path = os.path.join(output_dir, f"{nome}_heatmap.html")
+        # Caminho 1: Pasta de outputs normal (para seu uso local)
+        output_path_local = os.path.join(output_dir, f"{nome}_heatmap.html")
+        
+        # Caminho 2: Pasta do GitHub Pages (docs/heatmaps)
+        # Cria a pasta docs/heatmaps se ela não existir
+        docs_dir = os.path.join(os.getcwd(), 'docs', 'heatmaps')
+        os.makedirs(docs_dir, exist_ok=True)
+        output_path_docs = os.path.join(docs_dir, f"{nome}_heatmap.html")
+
         highlight_points = [(d['Temp (C)'], d['Time (s)']) 
                            for d in details_list if isinstance(details_list, list)]
-        # auto_open=False by default (set to True to open in browser automatically)
-        plot_interactive_heatmap(grafo_podado, output_path, highlight_points=highlight_points, auto_open=False)
+        
+        # Gera o gráfico salvando direto na pasta do site
+        plot_interactive_heatmap(grafo_podado, output_path_docs, highlight_points=highlight_points, auto_open=False)
+        
+        # Opcional: Copiar também para a pasta de outputs local se quiser duplicado
+        # Mas salvar direto na docs/heatmaps já resolve o problema do site.
+        print(f"   -> Heatmap published to: {output_path_docs}")
+
     except Exception as e:
         log_error(f"Error plotting heatmap '{nome}': {e}")
 
