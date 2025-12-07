@@ -313,8 +313,9 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             name='Single Steel'
         ))
     
-    # Multi-steel points (squares)
+    # Multi-steel points (squares) - shows colorbar if no single steel points
     if multi_temps:
+        show_colorbar_multi = not single_temps
         fig.add_trace(go.Scatter(
             x=multi_temps,
             y=multi_times,
@@ -326,7 +327,12 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
                 colorscale='RdYlBu_r',
                 cmin=vmin,
                 cmax=vmax,
-                showscale=False,
+                showscale=show_colorbar_multi,
+                colorbar=dict(
+                    title="Hardness (HRC)",
+                    thickness=20,
+                    len=0.7
+                ) if show_colorbar_multi else None,
                 line=dict(width=0.5, color='white')
             ),
             text=multi_hovers,
@@ -334,8 +340,9 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             name='■ Multiple Steels'
         ))
     
-    # Optimal solution (star with black border)
+    # Optimal solution (star with black border) - shows colorbar if only optimal points exist
     if opt_temps:
+        show_colorbar_opt = not single_temps and not multi_temps
         fig.add_trace(go.Scatter(
             x=opt_temps,
             y=opt_times,
@@ -347,7 +354,12 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
                 colorscale='RdYlBu_r',
                 cmin=vmin,
                 cmax=vmax,
-                showscale=False,
+                showscale=show_colorbar_opt,
+                colorbar=dict(
+                    title="Hardness (HRC)",
+                    thickness=20,
+                    len=0.7
+                ) if show_colorbar_opt else None,
                 line=dict(width=3, color='black')
             ),
             text=opt_hovers,
@@ -358,7 +370,7 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
     
     # Update layout
     fig.update_layout(
-        title="Solution Space Map: Heat Treatment Parameters and Resulting Steel Hardness",
+        title="Steel Heat Treatment Solution Space: Temperature-Time Analysis with Hardness Response",
         xaxis_title="Temperature (°C)",
         yaxis_title="Time (s)",
         hovermode='closest',
