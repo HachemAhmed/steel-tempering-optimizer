@@ -5,140 +5,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Steel Heat Treatment Optimization - Interactive Results</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             padding: 20px;
+            color: #333;
         }
-        
         .container {
             max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-        
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px;
             text-align: center;
         }
-        
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
-        .content {
-            padding: 40px;
-        }
-        
+        header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        header p { font-size: 1.2em; opacity: 0.9; }
+        .content { padding: 40px; }
         .info-box {
             background: #f8f9fa;
-            border-left: 4px solid #667eea;
+            border-left: 5px solid #667eea;
             padding: 20px;
             margin-bottom: 30px;
-            border-radius: 8px;
+            border-radius: 4px;
         }
-        
-        .info-box h2 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
         .query-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 25px;
             margin-top: 30px;
         }
-        
         .query-card {
             background: white;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #e0e0e0;
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
             transition: all 0.3s ease;
-            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        
         .query-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
             border-color: #667eea;
         }
-        
-        .query-card h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-        
-        .query-card .badge {
+        .badge {
             display: inline-block;
             padding: 5px 12px;
-            background: #667eea;
             color: white;
             border-radius: 20px;
             font-size: 0.85em;
-            margin-bottom: 10px;
-        }
-        
-        .query-card .description {
-            color: #666;
-            font-size: 0.95em;
             margin-bottom: 15px;
+            font-weight: bold;
+            align-self: flex-start;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        
-        .query-card .btn {
-            display: inline-block;
-            padding: 10px 20px;
+        .query-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            line-height: 1.4;
+        }
+        .description {
+            color: #555;
+            font-size: 0.95em;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            text-align: center;
             text-decoration: none;
             border-radius: 8px;
-            transition: all 0.3s ease;
+            transition: opacity 0.3s;
             font-weight: bold;
         }
-        
-        .query-card .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
+        .btn:hover { opacity: 0.9; }
         footer {
-            background: #f8f9fa;
+            background: #f1f2f6;
             padding: 20px;
             text-align: center;
-            color: #666;
-            border-top: 1px solid #e0e0e0;
-        }
-        
-        .github-link {
-            display: inline-block;
-            margin-top: 10px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        
-        .github-link:hover {
-            text-decoration: underline;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
@@ -151,103 +117,107 @@
         
         <div class="content">
             <div class="info-box">
-                <h2>📊 About This Project</h2>
+                <h2>📊 Project Overview</h2>
                 <p>
-                    This research explores optimal heat treatment processes for carbon and low-alloy steels 
-                    using graph-based optimization (Dijkstra's algorithm). Each query below represents a 
-                    different optimization scenario with specific constraints.
-                </p>
-                <p style="margin-top: 10px;">
-                    <strong>How to use:</strong> Click on any query card to view the interactive heatmap. 
-                    Hover over points to see detailed steel properties and hardness statistics.
+                    Below are the results of algorithmic searches for optimal heat treatment processes based on varying constraints.
+                    Click on any card to explore the solution space heatmap.
                 </p>
             </div>
-            
-            <h2 style="margin-bottom: 20px; color: #333;">🔬 Interactive Results</h2>
             
             <div class="query-grid">
-                <!-- Query 1 -->
+
                 <div class="query-card">
-                    <span class="badge">Time Optimization</span>
-                    <h3>Test 1: Standard Process</h3>
-                    <p class="description">
-                        Target: 45-50 HRC<br>
-                        Temperature: 400-450°C<br>
-                        Goal: Minimize processing time
-                    </p>
-                    <a href="heatmaps/Test_1_Standard_Optimize_Time_heatmap.html" class="btn">View Heatmap →</a>
+                    <span class="badge" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)">Time Opt</span>
+                    <h3>Test 1 Standard Optimize Time</h3>
+                    <div class="description">
+                        Target: <strong>45-50 HRC</strong><br>Temp: 400-450 °C
+                    </div>
+                    <a href="heatmaps/Test_1_Standard_Optimize_Time_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
                 </div>
-                
-                <!-- Query 2 -->
+            
                 <div class="query-card">
-                    <span class="badge">Temperature Optimization</span>
-                    <h3>Test 2: Fixed Time</h3>
-                    <p class="description">
-                        Target: 55-60 HRC<br>
-                        Time: 600s (fixed)<br>
-                        Goal: Minimize temperature
-                    </p>
-                    <a href="heatmaps/Test_2_Standard_Optimize_Temperature_heatmap.html" class="btn">View Heatmap →</a>
+                    <span class="badge" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%)">Temperature Opt</span>
+                    <h3>Test 2 Standard Optimize Temperature</h3>
+                    <div class="description">
+                        Target: <strong>55-60 HRC</strong><br>Time: 600.0s (Fixed)
+                    </div>
+                    <a href="heatmaps/Test_2_Standard_Optimize_Temperature_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
                 </div>
-                
-                <!-- Query 3 -->
+            
                 <div class="query-card">
-                    <span class="badge">Composition Filter</span>
-                    <h3>Test 3: High Chromium Alloy</h3>
-                    <p class="description">
-                        Target: 50-55 HRC<br>
-                        C > 0.5%, Cr > 0.7%<br>
-                        Goal: Minimize time
-                    </p>
-                    <a href="heatmaps/Test_3_High_Chromium_Alloy_heatmap.html" class="btn">View Heatmap →</a>
+                    <span class="badge" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)">Time Opt</span>
+                    <h3>Test 3 High Chromium Alloy</h3>
+                    <div class="description">
+                        Target: <strong>50-55 HRC</strong><br>Comp: C > 0.5%, Cr > 0.7%
+                    </div>
+                    <a href="heatmaps/Test_3_High_Chromium_Alloy_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
                 </div>
-                
-                <!-- Query 7 -->
+            
                 <div class="query-card">
-                    <span class="badge">Specific Steel</span>
-                    <h3>Test 7: AISI-SAE 1045</h3>
-                    <p class="description">
-                        Steel: AISI-SAE 1045<br>
-                        Target: 45-50 HRC<br>
-                        Goal: Minimize time
-                    </p>
-                    <a href="heatmaps/Test_7_Specific_Steel_1045_heatmap.html" class="btn">View Heatmap →</a>
+                    <span class="badge" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)">Time Opt</span>
+                    <h3>Test 4 Impossible Constraints</h3>
+                    <div class="description">
+                        Target: <strong>60-65 HRC</strong><br>Comp: C < 0.1%
+                    </div>
+                    <a href="heatmaps/Test_4_Impossible_Constraints_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
                 </div>
-                
-                <!-- Query 8 -->
+            
                 <div class="query-card">
-                    <span class="badge">Broad Range</span>
-                    <h3>Test 8: AISI-SAE 4140 Analysis</h3>
-                    <p class="description">
-                        Steel: AISI-SAE 4140<br>
-                        Target: 20-60 HRC (wide)<br>
-                        Goal: Solution space exploration
-                    </p>
-                    <a href="heatmaps/Test_8_Broad_Heatmap_4140_heatmap.html" class="btn">View Heatmap →</a>
+                    <span class="badge" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%)">Temperature Opt</span>
+                    <h3>Test 5 Low Hardness High Temp</h3>
+                    <div class="description">
+                        Target: <strong>15-20 HRC</strong><br>Temp: 650-700 °C
+                    </div>
+                    <a href="heatmaps/Test_5_Low_Hardness_High_Temp_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
                 </div>
-                
-                <!-- Query 10 -->
+            
                 <div class="query-card">
-                    <span class="badge">Balanced Optimization</span>
-                    <h3>Test 10: Multi-Criteria</h3>
-                    <p class="description">
-                        Target: 40-50 HRC<br>
-                        C > 0.3%, Mn < 0.9%<br>
-                        Goal: Balance time & temperature
-                    </p>
-                    <a href="heatmaps/Test_10_Balanced_Tradeoff_heatmap.html" class="btn">View Heatmap →</a>
+                    <span class="badge" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%)">Temperature Opt</span>
+                    <h3>Test 6 Long Duration 24h</h3>
+                    <div class="description">
+                        Target: <strong>35-40 HRC</strong><br>Time: 86400.0s (Fixed)
+                    </div>
+                    <a href="heatmaps/Test_6_Long_Duration_24h_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
                 </div>
-            </div>
-        </div>
-        
-        <footer>
-            <p>© 2024 Steel Heat Treatment Optimization Research</p>
-            <a href="https://github.com/seu-usuario/steel-optimization" class="github-link">
-                View Source Code on GitHub →
-            </a>
-            <p style="margin-top: 10px; font-size: 0.9em;">
-                For questions or collaboration: your.email@university.edu
-            </p>
+            
+                <div class="query-card">
+                    <span class="badge" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)">Time Opt</span>
+                    <h3>Test 7 Specific Steel 1045</h3>
+                    <div class="description">
+                        Target: <strong>45-50 HRC</strong><br>Steel: <strong>AISI-SAE 1045</strong>
+                    </div>
+                    <a href="heatmaps/Test_7_Specific_Steel_1045_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
+                </div>
+            
+                <div class="query-card">
+                    <span class="badge" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)">Time Opt</span>
+                    <h3>Test 8 Broad Heatmap 4140</h3>
+                    <div class="description">
+                        Target: <strong>20-60 HRC</strong><br>Steel: <strong>AISI-SAE 4140</strong>
+                    </div>
+                    <a href="heatmaps/Test_8_Broad_Heatmap_4140_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
+                </div>
+            
+                <div class="query-card">
+                    <span class="badge" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%)">Balanced Opt</span>
+                    <h3>Test 9 Balanced Optimization</h3>
+                    <div class="description">
+                        Target: <strong>40-45 HRC</strong><br>Comp: C < 0.5%
+                    </div>
+                    <a href="heatmaps/Test_9_Balanced_Optimization_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
+                </div>
+            
+                <div class="query-card">
+                    <span class="badge" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%)">Balanced Opt</span>
+                    <h3>Test 10 Balanced Tradeoff</h3>
+                    <div class="description">
+                        Target: <strong>40-50 HRC</strong><br>Comp: C > 0.3%, Mn < 0.9%
+                    </div>
+                    <a href="heatmaps/Test_10_Balanced_Tradeoff_heatmap.html" class="btn" target="_blank">View Heatmap →</a>
+                </div>
+            
+            </div> </div> <footer>
+            <p>Generated automatically via Python | Steel Optimization Research</p>
         </footer>
     </div>
 </body>
