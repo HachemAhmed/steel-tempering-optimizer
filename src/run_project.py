@@ -8,10 +8,12 @@ import json
 import glob
 import sys
 import config
+import preprocess
+from steel_graph import SteelGraph
 from utils import log_error, NullWriter
 from graph_visualizer import plot_filtered_graph_comparison, plot_full_graph, plot_interactive_heatmap
 from reporter import generate_text_report
-
+from generate_index import generate_index_html
 # ============================================================================
 # VALIDATION
 # ============================================================================
@@ -151,7 +153,8 @@ def setup_environment():
         except: 
             pass
     
-    sys.stdout = NullWriter()
+    # Suppress stdout only if explicitly enabled
+    # sys.stdout = NullWriter()  # Commented out to see output
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     
     for ext in ["*.png", "*.jpg", "*.txt"]:
@@ -234,33 +237,107 @@ def initialize_graph():
         log_error(f"Error building graph: {e}", exc_info=True, level='CRITICAL')
         return None
 
-
+def load_queries():
+    """
+    Loads query definitions from consultas.json
+    
+    Returns:
+        list: List of query dictionaries, or empty list on error
+    """
+    try:
+        with open(config.QUERIES_PATH, 'r', encoding='utf-8') as f:
+            queries = json.load(f)
+        
+        if not isinstance(queries, list):
+            log_error("consultas.json must contain a list of queries")
+            return []
+        
+        print(f"✓ Loaded {len(queries)} queries from {config.QUERIES_PATH}")
+        return queries
+        
+    except FileNotFoundError:
+        log_error(f"Query file not found: {config.QUERIES_PATH}")
+        return []
+    except json.JSONDecodeError as e:
+        log_error(f"Invalid JSON in {config.QUERIES_PATH}: {e}")
+        return []
+    except Exception as e:
+        log_error(f"Error loading queries: {e}")
+        return []
 # ============================================================================
 # MAIN
 # ============================================================================
 
 def main():
+    """
+    Main execution pipeline:
+    1. Preprocesses raw data
+    2. Constructs the steel treatment graph
+    3. Generates full graph visualization
+    4. Executes all queries from consultas.json
+    5. Generates index.html automatically
+    """
     setup_environment()
     
-    consultas = load_and_validate_queries()
-    if consultas is None: 
-        sys.exit(1)
+    # Step 1: Preprocess data
+    print("\n" + "="*60)
+    print("STEP 1: DATA PREPROCESSING")
+    print("="*60)
+    if not preprocess.main():
+        log_error("Preprocessing failed")
+        return False
     
-    graph = initialize_graph()
-    if graph is None: 
-        sys.exit(1)
+    # Step 2: Build graph
+    print("\n" + "="*60)
+    print("STEP 2: GRAPH CONSTRUCTION")
+    print("="*60)
+    try:
+        from steel_graph import SteelGraph
+        graph = SteelGraph(config.PROCESSED_DATA_PATH)
+        print("✓ Graph constructed successfully")
+    except Exception as e:
+        log_error(f"Graph construction failed: {e}")
+        return False
     
-    for query in consultas:
-        try:
-            execute_query(graph, query, config.OUTPUT_DIR)
-        except Exception as e:
-            log_error(f"Fatal error in query '{query.get('query_name')}': {e}", exc_info=True)
+    # Step 3: Generate full graph visualization
+    print("\n" + "="*60)
+    print("STEP 3: FULL GRAPH VISUALIZATION")
+    print("="*60)
+    full_graph_path = os.path.join(config.OUTPUT_DIR, "full_graph.png")
+    plot_full_graph(graph.get_master_graph(), full_graph_path)
+    
+    # Step 4: Load and execute queries
+    print("\n" + "="*60)
+    print("STEP 4: EXECUTING QUERIES")
+    print("="*60)
+    queries = load_queries()
+    if not queries:
+        log_error("No queries to execute")
+        return False
+    
+    print(f"Found {len(queries)} queries to execute\n")
+    
+    for idx, query in enumerate(queries, 1):
+        print(f"\n--- Query {idx}/{len(queries)}: {query.get('query_name', 'Unnamed')} ---")
+        if not validate_query(query, idx):
             continue
+        execute_query(graph, query, config.OUTPUT_DIR)
+    
+    # Step 5: Generate index.html automatically
+    print("\n" + "="*60)
+    print("STEP 5: GENERATING INDEX.HTML")
+    print("="*60)
+    generate_index_html()
+    
+    print("\n" + "="*60)
+    print("✓ ALL STEPS COMPLETED SUCCESSFULLY!")
+    print("="*60)
+    print(f"✓ Results saved in: {config.OUTPUT_DIR}")
+    print(f"✓ Open index.html in your browser to view all results")
+    print("="*60 + "\n")
+    
+    return True
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        log_error("Fatal error in main execution", exc_info=True)
-        sys.exit(1)
+    main()
