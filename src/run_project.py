@@ -9,9 +9,8 @@ import glob
 import sys
 import config
 from utils import log_error, NullWriter
-from graph_visualizer import plot_filtered_graph, plot_full_graph, plot_hardness_heatmap
+from graph_visualizer import plot_filtered_graph_comparison, plot_full_graph, plot_interactive_heatmap
 from reporter import generate_text_report
-
 
 # ============================================================================
 # VALIDATION
@@ -20,13 +19,6 @@ from reporter import generate_text_report
 def validate_query(query, index):
     """
     Validates query structure and parameters.
-    
-    Args:
-        query: Query dictionary from consultas.json
-        index: Query position in the list (for error messages)
-        
-    Returns:
-        Validated query dict or None if invalid
     """
     required = ['query_name', 'optimize_by', 'filters']
     
@@ -40,7 +32,6 @@ def validate_query(query, index):
         log_error(f"Query #{index} ('{query['query_name']}'): Invalid optimize_by", level='WARNING')
         return None
     
-    # Set default alpha for balanced optimization
     if query['optimize_by'] == 'balanced' and 'alpha' not in query:
         query['alpha'] = 0.5
     
@@ -58,14 +49,6 @@ def validate_query(query, index):
 def execute_query(graph, query, output_dir):
     """
     Executes a complete query: runs algorithm, generates report and visualizations.
-    
-    Args:
-        graph: SteelGraph instance
-        query: Validated query dictionary
-        output_dir: Output directory path
-        
-    Returns:
-        bool: True if successful, False otherwise
     """
     nome = query['query_name']
     filtros = query['filters']
@@ -79,16 +62,16 @@ def execute_query(graph, query, output_dir):
     
     paths, custo, grafo_podado, details_list, success = result
     
-    # Step 2: Generate report (using reporter.py module)
+    # Step 2: Generate report
     report_path = os.path.join(output_dir, f"{nome}_report.txt")
     if success:
         result_data = (paths, custo, grafo_podado, details_list)
     else:
-        result_data = paths  # Error string
+        result_data = paths
     
     generate_text_report(report_path, nome, optimize_by, filtros, result_data, alpha)
     
-    # Step 3: Generate visualizations (only if results exist)
+    # Step 3: Generate visualizations
     if success and grafo_podado and grafo_podado.number_of_nodes() > 0:
         _generate_visualizations(output_dir, nome, paths, custo, optimize_by, 
                                 grafo_podado, details_list)
@@ -99,10 +82,6 @@ def execute_query(graph, query, output_dir):
 def _run_algorithm(graph, nome, filtros, optimize_by, alpha):
     """
     Executes the optimization algorithm.
-    
-    Returns:
-        Tuple: (paths, cost, pruned_graph, details_list, success_flag)
-               or (error_string, 0, None, [], False) on failure
     """
     try:
         result = graph.find_best_process(filtros, optimize_by=optimize_by, alpha=alpha)
@@ -122,22 +101,24 @@ def _run_algorithm(graph, nome, filtros, optimize_by, alpha):
 def _generate_visualizations(output_dir, nome, paths, custo, optimize_by, 
                              grafo_podado, details_list):
     """
-    Generates graph diagram and heatmap visualizations.
+    Generates visual outputs:
+    1. Comparison graph (all optimal paths with curved edges)
+    2. Interactive heatmap (HTML with hover tooltips showing full statistics)
     """
-    # Graph visualization
+    # 1. Comparison Graph
     try:
         output_path = os.path.join(output_dir, f"{nome}_graph.png")
-        first_path = paths[0] if isinstance(paths, list) else None
-        plot_filtered_graph(grafo_podado, first_path, custo, optimize_by, output_path)
+        plot_filtered_graph_comparison(grafo_podado, paths, custo, optimize_by, output_path)
     except Exception as e:
-        log_error(f"Error plotting graph '{nome}': {e}")
+        log_error(f"Error plotting comparison graph '{nome}': {e}")
     
-    # Heatmap visualization
+    # 2. Interactive Heatmap (generates HTML + PNG automatically)
     try:
-        output_path = os.path.join(output_dir, f"{nome}_heatmap.png")
+        output_path = os.path.join(output_dir, f"{nome}_heatmap.html")
         highlight_points = [(d['Temp (C)'], d['Time (s)']) 
                            for d in details_list if isinstance(details_list, list)]
-        plot_hardness_heatmap(grafo_podado, output_path, highlight_points=highlight_points)
+        # auto_open=False by default (set to True to open in browser automatically)
+        plot_interactive_heatmap(grafo_podado, output_path, highlight_points=highlight_points, auto_open=False)
     except Exception as e:
         log_error(f"Error plotting heatmap '{nome}': {e}")
 
@@ -148,23 +129,17 @@ def _generate_visualizations(output_dir, nome, paths, custo, optimize_by,
 
 def setup_environment():
     """
-    Configures initial environment: clears logs, silences stdout, 
-    creates output directory, and clears old outputs.
+    Configures initial environment.
     """
-    # Clear previous log file
     if os.path.exists(config.LOG_FILE_PATH):
         try: 
             os.remove(config.LOG_FILE_PATH)
         except: 
             pass
     
-    # Suppress stdout (keeps console clean)
     sys.stdout = NullWriter()
-    
-    # Create output directory
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     
-    # Clear old output files
     for ext in ["*.png", "*.jpg", "*.txt"]:
         for f in glob.glob(os.path.join(config.OUTPUT_DIR, ext)):
             try: 
@@ -176,9 +151,6 @@ def setup_environment():
 def load_and_validate_queries():
     """
     Loads and validates queries from consultas.json.
-    
-    Returns:
-        List of valid query dictionaries or None on failure
     """
     try:
         with open(config.QUERIES_PATH, 'r', encoding='utf-8') as f:
@@ -188,7 +160,6 @@ def load_and_validate_queries():
             log_error("consultas.json must contain a list of queries", level='CRITICAL')
             return None
         
-        # Validate each query
         consultas = []
         for idx, query in enumerate(consultas_raw):
             validated = validate_query(query, idx)
@@ -215,15 +186,10 @@ def load_and_validate_queries():
 def initialize_graph():
     """
     Initializes the master steel graph.
-    Runs preprocessing if needed, then constructs the graph.
-    
-    Returns:
-        SteelGraph instance or None on failure
     """
     from steel_graph import SteelGraph
     import preprocess
     
-    # Run preprocessing if processed data doesn't exist
     if not os.path.exists(config.PROCESSED_DATA_PATH):
         if not os.path.exists(config.RAW_DATA_PATH):
             log_error(f"Raw file not found: {config.RAW_DATA_PATH}", level='CRITICAL')
@@ -236,14 +202,12 @@ def initialize_graph():
             log_error(f"Preprocessing error: {e}", exc_info=True, level='CRITICAL')
             return None
     
-    # Build master graph
     try:
         graph = SteelGraph(config.PROCESSED_DATA_PATH)
         if not graph.graph:
             log_error("Master Graph empty", level='CRITICAL')
             return None
         
-        # Generate full graph visualization
         try:
             output_path = os.path.join(config.OUTPUT_DIR, 'main_full_graph.png')
             plot_full_graph(graph.get_master_graph(), output_path)
@@ -262,20 +226,16 @@ def initialize_graph():
 # ============================================================================
 
 def main():
-    """
-    Main execution function: orchestrates the complete optimization pipeline.
-    """
     setup_environment()
     
     consultas = load_and_validate_queries()
-    if consultas is None:
+    if consultas is None: 
         sys.exit(1)
     
     graph = initialize_graph()
-    if graph is None:
+    if graph is None: 
         sys.exit(1)
     
-    # Execute each query
     for query in consultas:
         try:
             execute_query(graph, query, config.OUTPUT_DIR)
@@ -290,4 +250,3 @@ if __name__ == "__main__":
     except Exception as e:
         log_error("Fatal error in main execution", exc_info=True)
         sys.exit(1)
-    
