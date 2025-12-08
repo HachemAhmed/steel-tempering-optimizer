@@ -11,7 +11,8 @@ import config
 import preprocess
 from steel_graph import SteelGraph
 from utils import log_error, NullWriter
-from graph_visualizer import plot_filtered_graph_comparison, plot_full_graph, plot_interactive_heatmap
+from graph_visualizer import plot_filtered_graph_comparison, plot_full_graph, plot_interactive_heatmap, plot_static_heatmap
+
 from reporter import generate_text_report
 from generate_index import generate_index_html
 # ============================================================================
@@ -103,40 +104,43 @@ def _run_algorithm(graph, nome, filtros, optimize_by, alpha):
 def _generate_visualizations(output_dir, nome, paths, custo, optimize_by, 
                              grafo_podado, details_list):
     """
-    Generates visual outputs:
-    1. Comparison graph (PNG)
-    2. Interactive heatmap (HTML) - Saved to both output_dir AND docs/heatmaps/
+    Generates visual outputs optimized for scientific publication:
+    1. Comparison graph (PNG) -> outputs/ (for local analysis)
+    2. Heatmap PNG (high-res) -> outputs/ (for paper figures)
+    3. Interactive heatmap (HTML) -> docs/heatmaps/ (for GitHub Pages supplement)
     """
-    # 1. Comparison Graph (Mantido igual)
+    
+    # 1. Comparison Graph PNG (unchanged)
     try:
         output_path = os.path.join(output_dir, f"{nome}_graph.png")
         plot_filtered_graph_comparison(grafo_podado, paths, custo, optimize_by, output_path)
     except Exception as e:
         log_error(f"Error plotting comparison graph '{nome}': {e}")
     
-    # 2. Interactive Heatmap (ATUALIZADO PARA GITHUB PAGES)
+    # Prepare highlight points for heatmaps
+    highlight_points = [(d['Temp (C)'], d['Time (s)']) 
+                       for d in details_list if isinstance(details_list, list)]
+    
+    # 2. Static Heatmap PNG (NEW - for paper)
     try:
-        # Caminho 1: Pasta de outputs normal (para seu uso local)
-        output_path_local = os.path.join(output_dir, f"{nome}_heatmap.html")
-        
-        # Caminho 2: Pasta do GitHub Pages (docs/heatmaps)
-        # Cria a pasta docs/heatmaps se ela não existir
+        png_path = os.path.join(output_dir, f"{nome}_heatmap.png")
+        plot_static_heatmap(grafo_podado, png_path, highlight_points=highlight_points)
+        print(f"   -> Static heatmap (for paper): {png_path}")
+    except Exception as e:
+        log_error(f"Error plotting static heatmap '{nome}': {e}")
+    
+    # 3. Interactive Heatmap HTML (for GitHub Pages only)
+    try:
         docs_dir = os.path.join(os.getcwd(), 'docs', 'heatmaps')
         os.makedirs(docs_dir, exist_ok=True)
-        output_path_docs = os.path.join(docs_dir, f"{nome}_heatmap.html")
-
-        highlight_points = [(d['Temp (C)'], d['Time (s)']) 
-                           for d in details_list if isinstance(details_list, list)]
+        html_path = os.path.join(docs_dir, f"{nome}_heatmap.html")
         
-        # Gera o gráfico salvando direto na pasta do site
-        plot_interactive_heatmap(grafo_podado, output_path_docs, highlight_points=highlight_points, auto_open=False)
+        plot_interactive_heatmap(grafo_podado, html_path, 
+                                highlight_points=highlight_points, auto_open=False)
         
-        # Opcional: Copiar também para a pasta de outputs local se quiser duplicado
-        # Mas salvar direto na docs/heatmaps já resolve o problema do site.
-        print(f"   -> Heatmap published to: {output_path_docs}")
-
+        print(f"   -> Interactive heatmap (online): {html_path}")
     except Exception as e:
-        log_error(f"Error plotting heatmap '{nome}': {e}")
+        log_error(f"Error plotting interactive heatmap '{nome}': {e}")
 
 
 # ============================================================================

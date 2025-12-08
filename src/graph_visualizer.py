@@ -404,3 +404,161 @@ def _plot_matplotlib_heatmap_fallback(graph, output_filename, highlight_points):
     plt.savefig(output_filename, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Static heatmap saved: {output_filename}")
+
+def plot_static_heatmap(graph, output_filename, highlight_points=None, dpi=300):
+    """
+    Generates a high-resolution static PNG heatmap for scientific publications.
+    
+    This version prioritizes:
+    - Publication-quality resolution (300 DPI default)
+    - Clear axis labels and legends
+    - Proper color normalization
+    - Optimal highlighting of solution points
+    
+    Args:
+        graph: NetworkX graph (pruned)
+        output_filename: Path to save PNG
+        highlight_points: List of (temp, time) tuples for optimal solutions
+        dpi: Resolution (default 300 for publication quality)
+    """
+    print(f"Generating publication-quality static heatmap: {output_filename}...")
+    
+    # Dictionary to aggregate data: key=(temp, time), value=list of {steel, hardness}
+    points_data = defaultdict(list)
+    
+    # Strategy: Iterate over 'temp' nodes (Layer 3)
+    for node, data in graph.nodes(data=True):
+        if data.get('type') == 'temp':
+            temp_val = data.get('value')
+            
+            try:
+                # Get Time (unique predecessor of Temp node)
+                preds = list(graph.predecessors(node))
+                if not preds: 
+                    continue
+                time_node = preds[0]
+                time_val = graph.nodes[time_node].get('value')
+                
+                # Get Steel (predecessor of Time node)
+                steel_preds = list(graph.predecessors(time_node))
+                if not steel_preds: 
+                    continue
+                steel_node = steel_preds[0]
+                steel_name = graph.nodes[steel_node].get('steel_type', str(steel_node))
+                
+                # Get Hardness (successor of Temp node)
+                succs = list(graph.successors(node))
+                if not succs: 
+                    continue
+                hard_node = succs[0]
+                hard_val = graph.nodes[hard_node].get('value')
+                
+                if temp_val is not None and time_val is not None:
+                    points_data[(temp_val, time_val)].append({
+                        'steel': steel_name,
+                        'hardness': hard_val
+                    })
+                    
+            except Exception:
+                continue
+
+    if not points_data:
+        print("WARNING: No valid data points found for static heatmap.")
+        return
+
+    # Separate points by type
+    optimal_coords = set(highlight_points) if highlight_points else set()
+    
+    single_x, single_y, single_c = [], [], []
+    multi_x, multi_y, multi_c, multi_count = [], [], [], []
+    opt_x, opt_y, opt_c = [], [], []
+    
+    for (temp, time), items in points_data.items():
+        avg_hardness = sum(item['hardness'] for item in items) / len(items)
+        unique_steels = {item['steel']: item['hardness'] for item in items}
+        
+        if (temp, time) in optimal_coords:
+            opt_x.append(temp)
+            opt_y.append(time)
+            opt_c.append(avg_hardness)
+        elif len(unique_steels) > 1:
+            multi_x.append(temp)
+            multi_y.append(time)
+            multi_c.append(avg_hardness)
+            multi_count.append(len(unique_steels))
+        else:
+            single_x.append(temp)
+            single_y.append(time)
+            single_c.append(avg_hardness)
+    
+    # Determine color scale range
+    all_hardnesses = single_c + multi_c + opt_c
+    if not all_hardnesses:
+        print("WARNING: No hardness values to plot.")
+        return
+    
+    vmin, vmax = min(all_hardnesses) - 1, max(all_hardnesses) + 1
+    
+    # Create figure with publication-quality settings
+    fig, ax = plt.subplots(figsize=(12, 9))
+    
+    # 1. Plot single steel points
+    if single_x:
+        sc1 = ax.scatter(single_x, single_y, c=single_c, 
+                        cmap='RdYlBu_r', s=150, marker='o',
+                        edgecolors='gray', linewidths=0.5, alpha=0.85,
+                        vmin=vmin, vmax=vmax, label='Single Steel', zorder=2)
+    
+    # 2. Plot multi-steel points (squares with count labels)
+    if multi_x:
+        sc2 = ax.scatter(multi_x, multi_y, c=multi_c, 
+                        cmap='RdYlBu_r', s=180, marker='s',
+                        edgecolors='black', linewidths=1.0, alpha=0.85,
+                        vmin=vmin, vmax=vmax, label='Multiple Steels', zorder=3)
+        
+        # Add count labels to multi-steel points
+        for x, y, count in zip(multi_x, multi_y, multi_count):
+            text = ax.text(x, y, str(count), fontsize=9, fontweight='bold',
+                          color='white', ha='center', va='center', zorder=4)
+            text.set_path_effects([path_effects.withStroke(linewidth=2, foreground='black')])
+    
+    # 3. Plot optimal solution points (stars with borders)
+    if opt_x:
+        ax.scatter(opt_x, opt_y, c=opt_c,
+                  cmap='RdYlBu_r', s=400, marker='*',
+                  edgecolors='black', linewidths=2.5, alpha=1.0,
+                  vmin=vmin, vmax=vmax, label='Optimal Solution', zorder=5)
+    
+    # Add colorbar
+    if single_x or multi_x or opt_x:
+        cbar = plt.colorbar(sc1 if single_x else sc2, ax=ax, pad=0.02)
+        cbar.set_label('Final Hardness (HRC)', rotation=270, labelpad=20, fontsize=12, fontweight='bold')
+        cbar.ax.tick_params(labelsize=10)
+    
+    # Styling for publication
+    ax.set_xlabel('Tempering Temperature (°C)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Tempering Time (s)', fontsize=14, fontweight='bold')
+    ax.set_title('Steel Heat Treatment Solution Space', fontsize=16, fontweight='bold', pad=15)
+    
+    # Grid for readability
+    ax.grid(True, linestyle='--', alpha=0.3, linewidth=0.5)
+    ax.set_axisbelow(True)
+    
+    # Legend with custom styling
+    legend = ax.legend(loc='best', frameon=True, shadow=True, 
+                      fontsize=11, markerscale=0.8)
+    legend.get_frame().set_facecolor('white')
+    legend.get_frame().set_alpha(0.95)
+    
+    # Tick parameters
+    ax.tick_params(axis='both', which='major', labelsize=11)
+    
+    # Tight layout to avoid label cutoff
+    plt.tight_layout()
+    
+    # Save with high resolution
+    plt.savefig(output_filename, dpi=dpi, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+    plt.close()
+    
+    print(f"✓ Static heatmap saved at {dpi} DPI: {output_filename}")
