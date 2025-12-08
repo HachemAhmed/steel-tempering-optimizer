@@ -328,7 +328,14 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         ))
     
     fig.update_layout(
-        title="Steel Heat Treatment Solution Space: Temperature-Time Analysis with Hardness Response",
+        title=dict(
+            text="Steel Heat Treatment Solution Space: Temperature-Time Analysis with Hardness Response",
+            x=0.5,
+            xanchor='center',
+            y=0.98,
+            yanchor='top',
+            font=dict(size=16)
+        ),
         xaxis_title="Temperature (°C)", 
         yaxis_title="Time (s)",
         template='plotly_white', 
@@ -336,19 +343,19 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         height=800,
         hovermode='closest',
         font=dict(size=12),
-        # Position legend at top center to avoid both data and colorbar
+        # Position legend below title
         legend=dict(
-            orientation='h',  # Horizontal legend
-            x=0.5,            # Center horizontally
-            y=1.08,           # Above the plot
+            orientation='h',
+            x=0.5,
+            y=-0.15,  # Below the plot
             xanchor='center',
-            yanchor='bottom',
+            yanchor='top',
             bgcolor='rgba(255, 255, 255, 0.95)',
             bordercolor='rgba(0, 0, 0, 0.3)',
             borderwidth=1
         ),
-        # Add margin on the right for colorbar and top for legend
-        margin=dict(r=120, t=100)
+        # Add margins
+        margin=dict(r=120, t=120, b=80)
     )
     
     fig.write_html(output_filename, config={'displayModeBar': True})
