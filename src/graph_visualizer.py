@@ -168,8 +168,7 @@ def plot_full_graph(graph, output_image_filename):
 def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto_open=False):
     """
     Generates an interactive Plotly heatmap of Temperature vs Time with hardness as color.
-    FIX 2.0: Uses 'Temp' nodes as pivots. Since SteelGraph creates unique Temp nodes 
-    per data row (id:{i}), iterating them ensures 100% data capture without traversal errors.
+    FIX: Legend positioned to avoid overlap with colorbar.
     """
     try:
         import plotly.graph_objects as go
@@ -180,53 +179,46 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
 
     print(f"Generating interactive heatmap: {output_filename}...")
     
-    # Dicionário para agrupar dados: chave=(temp, time), valor=lista de {aço, dureza}
+    # Dictionary to group data: key=(temp, time), value=list of {steel, hardness}
     points_data = defaultdict(list)
     
-    # ESTRATÉGIA SEGURA: Iterar sobre nós de 'temp' (Layer 3)
-    # No steel_graph.py, esses nós são únicos por linha (id:{i}), garantindo que
-    # nenhum dado seja perdido se o grafo estiver podado corretamente.
+    # SAFE STRATEGY: Iterate over 'temp' nodes (Layer 3)
     for node, data in graph.nodes(data=True):
         if data.get('type') == 'temp':
             temp_val = data.get('value')
             
             try:
-                # 1. Pegar o Tempo (Predecessor único do nó de Temp)
+                # 1. Get Time (unique predecessor of Temp node)
                 preds = list(graph.predecessors(node))
                 if not preds: continue
                 time_node = preds[0]
                 time_val = graph.nodes[time_node].get('value')
                 
-                # 2. Pegar o Aço (Predecessor do nó de Tempo)
+                # 2. Get Steel (predecessor of Time node)
                 steel_preds = list(graph.predecessors(time_node))
                 if not steel_preds: continue
                 steel_node = steel_preds[0]
-                # Tenta pegar o nome limpo ou usa o ID do nó
                 steel_name = graph.nodes[steel_node].get('steel_type', str(steel_node))
                 
-                # 3. Pegar a Dureza (Sucessor do nó de Temp)
+                # 3. Get Hardness (successor of Temp node)
                 succs = list(graph.successors(node))
                 if not succs: continue
                 hard_node = succs[0]
                 hard_val = graph.nodes[hard_node].get('value')
                 
-                # Adiciona ao conjunto de dados
                 if temp_val is not None and time_val is not None:
                     points_data[(temp_val, time_val)].append({
                         'steel': steel_name,
                         'hardness': hard_val
                     })
                     
-            except Exception as e:
-                # Ignora nós malformados (não deve acontecer se o grafo foi podado corretamente)
+            except Exception:
                 continue
 
     if not points_data:
         print("WARNING: No valid data points found for heatmap (Graph might be empty).")
         return
 
-    # --- DAQUI PARA BAIXO, O CÓDIGO DE PLOTAGEM É O MESMO (VISUALIZAÇÃO) ---
-    
     optimal_coords = set(highlight_points) if highlight_points else set()
     
     single_temps, single_times, single_hardnesses, single_hovers = [], [], [], []
@@ -236,10 +228,9 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
     for (temp, time), items in points_data.items():
         avg_hardness = sum(item['hardness'] for item in items) / len(items)
         
-        # Remove duplicatas de aços para o tooltip
+        # Remove duplicates
         unique_steels = {}
         for item in items:
-            # Cria uma chave única para o aço para evitar repetições no texto
             unique_steels[item['steel']] = item['hardness']
             
         if len(unique_steels) == 1:
@@ -252,7 +243,6 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             )
         else:
             sorted_steels = sorted(unique_steels.items())
-            # Limita a lista de aços no tooltip se for muito grande (ex: > 15)
             if len(sorted_steels) > 15:
                 steels_list = "<br>".join([f"  • {s}: {h:.1f} HRC" for s, h in sorted_steels[:15]])
                 steels_list += f"<br>  ... and {len(sorted_steels)-15} more"
@@ -295,8 +285,15 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             x=single_temps, y=single_times, mode='markers',
             marker=dict(size=12, symbol='circle', color=single_hardnesses, 
                        colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
-                       showscale=True, colorbar=dict(title="Hardness (HRC)")),
-            text=single_hovers, hovertemplate='%{text}<extra></extra>', name='Single Steel'
+                       showscale=True, 
+                       colorbar=dict(
+                           title="Hardness (HRC)",
+                           x=1.02,  # Position colorbar to the right
+                           xanchor='left'
+                       )),
+            text=single_hovers, hovertemplate='%{text}<extra></extra>', 
+            name='Single Steel',
+            showlegend=True
         ))
     
     # 2. Multi-Steel Points
@@ -306,8 +303,15 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             x=multi_temps, y=multi_times, mode='markers',
             marker=dict(size=14, symbol='square', color=multi_hardnesses, 
                        colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
-                       showscale=show_scale, line=dict(width=1, color='white')),
-            text=multi_hovers, hovertemplate='%{text}<extra></extra>', name='Multiple Steels'
+                       showscale=show_scale, line=dict(width=1, color='white'),
+                       colorbar=dict(
+                           title="Hardness (HRC)",
+                           x=1.02,
+                           xanchor='left'
+                       ) if show_scale else None),
+            text=multi_hovers, hovertemplate='%{text}<extra></extra>', 
+            name='Multiple Steels',
+            showlegend=True
         ))
     
     # 3. Optimal Points
@@ -316,14 +320,31 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             x=opt_temps, y=opt_times, mode='markers',
             marker=dict(size=22, symbol='star', color=opt_hardnesses, 
                        colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
-                       line=dict(width=2, color='black')),
-            text=opt_hovers, hovertemplate='%{text}<extra></extra>', name='Optimal'
+                       line=dict(width=2, color='black'),
+                       showscale=False),
+            text=opt_hovers, hovertemplate='%{text}<extra></extra>', 
+            name='Optimal',
+            showlegend=True
         ))
     
     fig.update_layout(
         title="Steel Heat Treatment Solution Space",
-        xaxis_title="Temperature (°C)", yaxis_title="Time (s)",
-        template='plotly_white', height=800
+        xaxis_title="Temperature (°C)", 
+        yaxis_title="Time (s)",
+        template='plotly_white', 
+        height=800,
+        # Position legend to avoid colorbar overlap
+        legend=dict(
+            x=0.01,        # Left side of plot
+            y=0.99,        # Top of plot
+            xanchor='left',
+            yanchor='top',
+            bgcolor='rgba(255, 255, 255, 0.9)',
+            bordercolor='rgba(0, 0, 0, 0.3)',
+            borderwidth=1
+        ),
+        # Add margin on the right for colorbar
+        margin=dict(r=120)
     )
     
     fig.write_html(output_filename, config={'displayModeBar': True})
@@ -332,7 +353,6 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         import webbrowser
         import os
         webbrowser.open(f"file://{os.path.abspath(output_filename)}")
-
 
 
 def _plot_matplotlib_heatmap_fallback(graph, output_filename, highlight_points):
@@ -524,14 +544,21 @@ def plot_static_heatmap(graph, output_filename, highlight_points=None, dpi=300):
     
     # 3. Plot optimal solution points (stars with borders)
     if opt_x:
-        ax.scatter(opt_x, opt_y, c=opt_c,
+        sc3 = ax.scatter(opt_x, opt_y, c=opt_c,
                   cmap='RdYlBu_r', s=400, marker='*',
                   edgecolors='black', linewidths=2.5, alpha=1.0,
                   vmin=vmin, vmax=vmax, label='Optimal Solution', zorder=5)
     
-    # Add colorbar
+    # Add colorbar - use whichever scatter plot exists
     if single_x or multi_x or opt_x:
-        cbar = plt.colorbar(sc1 if single_x else sc2, ax=ax, pad=0.02)
+        if single_x:
+            colorbar_source = sc1
+        elif multi_x:
+            colorbar_source = sc2
+        else:
+            colorbar_source = sc3
+        
+        cbar = plt.colorbar(colorbar_source, ax=ax, pad=0.02)
         cbar.set_label('Final Hardness (HRC)', rotation=270, labelpad=20, fontsize=12, fontweight='bold')
         cbar.ax.tick_params(labelsize=10)
     
@@ -544,8 +571,8 @@ def plot_static_heatmap(graph, output_filename, highlight_points=None, dpi=300):
     ax.grid(True, linestyle='--', alpha=0.3, linewidth=0.5)
     ax.set_axisbelow(True)
     
-    # Legend with custom styling
-    legend = ax.legend(loc='best', frameon=True, shadow=True, 
+    # Legend with custom styling - positioned to avoid colorbar
+    legend = ax.legend(loc='upper left', frameon=True, shadow=True, 
                       fontsize=11, markerscale=0.8)
     legend.get_frame().set_facecolor('white')
     legend.get_frame().set_alpha(0.95)
