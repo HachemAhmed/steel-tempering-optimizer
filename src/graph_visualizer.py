@@ -341,19 +341,23 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         height=800,
         hovermode='closest',
         font=dict(size=12),
-        # Position legend horizontally below the plot
+        # Position legend horizontally below the plot - FIXED POSITION
         legend=dict(
             orientation='h',
             x=0.5,
-            y=-0.12,
+            y=-0.15,
             xanchor='center',
             yanchor='top',
+            xref='paper',  # Use paper coordinates (fixed)
+            yref='paper',  # Use paper coordinates (fixed)
             bgcolor='rgba(255, 255, 255, 0.95)',
             bordercolor='rgba(0, 0, 0, 0.3)',
             borderwidth=1.5
         ),
         # Add margins for colorbar and bottom legend
-        margin=dict(r=120, b=80)
+        margin=dict(r=120, b=100),
+        # Disable legend repositioning
+        autosize=False
     )
     
     fig.write_html(output_filename, config={'displayModeBar': True})
