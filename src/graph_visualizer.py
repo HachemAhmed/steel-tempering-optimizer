@@ -168,8 +168,8 @@ def plot_full_graph(graph, output_image_filename):
 def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto_open=False):
     """
     Generates an interactive Plotly heatmap of Temperature vs Time with hardness as color.
-    Each point shows steel type and hardness on hover.
-    FIX: Now iterates through ALL predecessors to capture the full solution space.
+    FIX 2.0: Uses 'Temp' nodes as pivots. Since SteelGraph creates unique Temp nodes 
+    per data row (id:{i}), iterating them ensures 100% data capture without traversal errors.
     """
     try:
         import plotly.graph_objects as go
@@ -180,61 +180,68 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
 
     print(f"Generating interactive heatmap: {output_filename}...")
     
-    # Extract data from graph nodes
+    # Dicionário para agrupar dados: chave=(temp, time), valor=lista de {aço, dureza}
     points_data = defaultdict(list)
     
-    # Percorre todos os nós para encontrar a camada de Dureza (Layer 4)
-    for hard_node, hard_data in graph.nodes(data=True):
-        if hard_data.get('layer') == 4:  # Hardness layer
-            hardness = hard_data.get('value')
-            if hardness is None: continue
+    # ESTRATÉGIA SEGURA: Iterar sobre nós de 'temp' (Layer 3)
+    # No steel_graph.py, esses nós são únicos por linha (id:{i}), garantindo que
+    # nenhum dado seja perdido se o grafo estiver podado corretamente.
+    for node, data in graph.nodes(data=True):
+        if data.get('type') == 'temp':
+            temp_val = data.get('value')
             
-            # Backtrack 1: Hardness <- Temp
-            # Iterar sobre TODOS os predecessores de temperatura
-            for temp_node in graph.predecessors(hard_node):
-                temp_data = graph.nodes[temp_node]
-                temp = temp_data.get('value')
+            try:
+                # 1. Pegar o Tempo (Predecessor único do nó de Temp)
+                preds = list(graph.predecessors(node))
+                if not preds: continue
+                time_node = preds[0]
+                time_val = graph.nodes[time_node].get('value')
                 
-                # Backtrack 2: Temp <- Time
-                # Iterar sobre TODOS os predecessores de tempo
-                for time_node in graph.predecessors(temp_node):
-                    time_data = graph.nodes[time_node]
-                    time = time_data.get('value')
+                # 2. Pegar o Aço (Predecessor do nó de Tempo)
+                steel_preds = list(graph.predecessors(time_node))
+                if not steel_preds: continue
+                steel_node = steel_preds[0]
+                # Tenta pegar o nome limpo ou usa o ID do nó
+                steel_name = graph.nodes[steel_node].get('steel_type', str(steel_node))
+                
+                # 3. Pegar a Dureza (Sucessor do nó de Temp)
+                succs = list(graph.successors(node))
+                if not succs: continue
+                hard_node = succs[0]
+                hard_val = graph.nodes[hard_node].get('value')
+                
+                # Adiciona ao conjunto de dados
+                if temp_val is not None and time_val is not None:
+                    points_data[(temp_val, time_val)].append({
+                        'steel': steel_name,
+                        'hardness': hard_val
+                    })
                     
-                    # Backtrack 3: Time <- Steel
-                    # Iterar sobre TODOS os aços que levam a esse tempo
-                    for steel_node in graph.predecessors(time_node):
-                        # O nome do nó de aço geralmente é o próprio identificador do aço
-                        steel = str(steel_node).split('_')[0] if '_' in str(steel_node) else str(steel_node)
-                        
-                        if temp is not None and time is not None:
-                            points_data[(temp, time)].append({
-                                'steel': steel,
-                                'hardness': hardness
-                            })
-    
+            except Exception as e:
+                # Ignora nós malformados (não deve acontecer se o grafo foi podado corretamente)
+                continue
+
     if not points_data:
-        print("WARNING: No valid data points found for heatmap")
+        print("WARNING: No valid data points found for heatmap (Graph might be empty).")
         return
+
+    # --- DAQUI PARA BAIXO, O CÓDIGO DE PLOTAGEM É O MESMO (VISUALIZAÇÃO) ---
     
-    # Identify optimal points for special treatment
     optimal_coords = set(highlight_points) if highlight_points else set()
     
-    # Separate data by type: single steel, multi steel, optimal
     single_temps, single_times, single_hardnesses, single_hovers = [], [], [], []
     multi_temps, multi_times, multi_hardnesses, multi_hovers = [], [], [], []
     opt_temps, opt_times, opt_hardnesses, opt_hovers = [], [], [], []
     
     for (temp, time), items in points_data.items():
-        # Average hardness if multiple steels at same (temp, time)
         avg_hardness = sum(item['hardness'] for item in items) / len(items)
         
-        # Remove duplicates steels for the hover list (just in case graph has redundancies)
+        # Remove duplicatas de aços para o tooltip
         unique_steels = {}
         for item in items:
+            # Cria uma chave única para o aço para evitar repetições no texto
             unique_steels[item['steel']] = item['hardness']
             
-        # Create hover text
         if len(unique_steels) == 1:
             item = items[0]
             hover_text = (
@@ -244,9 +251,14 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
                 f"Hardness: {item['hardness']:.1f} HRC"
             )
         else:
-            # Sort steels by name for cleaner tooltip
             sorted_steels = sorted(unique_steels.items())
-            steels_list = "<br>".join([f"  • {s}: {h:.1f} HRC" for s, h in sorted_steels])
+            # Limita a lista de aços no tooltip se for muito grande (ex: > 15)
+            if len(sorted_steels) > 15:
+                steels_list = "<br>".join([f"  • {s}: {h:.1f} HRC" for s, h in sorted_steels[:15]])
+                steels_list += f"<br>  ... and {len(sorted_steels)-15} more"
+            else:
+                steels_list = "<br>".join([f"  • {s}: {h:.1f} HRC" for s, h in sorted_steels])
+                
             hover_text = (
                 f"<b>Multiple Steels ({len(unique_steels)})</b><br>"
                 f"Temp: {temp}°C<br>"
@@ -255,7 +267,6 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
                 f"Steels:<br>{steels_list}"
             )
         
-        # Categorize points
         if (temp, time) in optimal_coords:
             opt_temps.append(temp)
             opt_times.append(time)
@@ -273,111 +284,49 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             single_hardnesses.append(avg_hardness)
             single_hovers.append(hover_text)
     
-    # Calculate global min/max for consistent color scaling
     all_hardnesses = single_hardnesses + multi_hardnesses + opt_hardnesses
-    if all_hardnesses:
-        vmin = min(all_hardnesses)
-        vmax = max(all_hardnesses)
-    else:
-        vmin, vmax = 0, 100
+    vmin, vmax = (min(all_hardnesses), max(all_hardnesses)) if all_hardnesses else (0, 100)
     
-    # Create figure
     fig = go.Figure()
     
-    # Single steel points (circles)
+    # 1. Single Steel Points
     if single_temps:
         fig.add_trace(go.Scatter(
-            x=single_temps,
-            y=single_times,
-            mode='markers',
-            marker=dict(
-                size=12,
-                symbol='circle',
-                color=single_hardnesses,
-                colorscale='RdYlBu_r',
-                cmin=vmin,
-                cmax=vmax,
-                showscale=True,
-                colorbar=dict(
-                    title="Hardness (HRC)",
-                    thickness=20,
-                    len=0.7
-                ),
-                line=dict(width=0.5, color='white')
-            ),
-            text=single_hovers,
-            hovertemplate='%{text}<extra></extra>',
-            name='Single Steel'
+            x=single_temps, y=single_times, mode='markers',
+            marker=dict(size=12, symbol='circle', color=single_hardnesses, 
+                       colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
+                       showscale=True, colorbar=dict(title="Hardness (HRC)")),
+            text=single_hovers, hovertemplate='%{text}<extra></extra>', name='Single Steel'
         ))
     
-    # Multi-steel points (squares)
+    # 2. Multi-Steel Points
     if multi_temps:
-        show_colorbar_multi = not single_temps
+        show_scale = not single_temps
         fig.add_trace(go.Scatter(
-            x=multi_temps,
-            y=multi_times,
-            mode='markers',
-            marker=dict(
-                size=14,
-                symbol='square',
-                color=multi_hardnesses,
-                colorscale='RdYlBu_r',
-                cmin=vmin,
-                cmax=vmax,
-                showscale=show_colorbar_multi,
-                colorbar=dict(
-                    title="Hardness (HRC)",
-                    thickness=20,
-                    len=0.7
-                ) if show_colorbar_multi else None,
-                line=dict(width=0.5, color='white')
-            ),
-            text=multi_hovers,
-            hovertemplate='%{text}<extra></extra>',
-            name='■ Multiple Steels'
+            x=multi_temps, y=multi_times, mode='markers',
+            marker=dict(size=14, symbol='square', color=multi_hardnesses, 
+                       colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
+                       showscale=show_scale, line=dict(width=1, color='white')),
+            text=multi_hovers, hovertemplate='%{text}<extra></extra>', name='Multiple Steels'
         ))
     
-    # Optimal solution (star)
+    # 3. Optimal Points
     if opt_temps:
-        show_colorbar_opt = not single_temps and not multi_temps
         fig.add_trace(go.Scatter(
-            x=opt_temps,
-            y=opt_times,
-            mode='markers',
-            marker=dict(
-                size=22,
-                symbol='star',
-                color=opt_hardnesses,
-                colorscale='RdYlBu_r',
-                cmin=vmin,
-                cmax=vmax,
-                showscale=show_colorbar_opt,
-                colorbar=dict(
-                    title="Hardness (HRC)",
-                    thickness=20,
-                    len=0.7
-                ) if show_colorbar_opt else None,
-                line=dict(width=3, color='black')
-            ),
-            text=opt_hovers,
-            hovertemplate='%{text}<extra></extra>',
-            name='⭐ Optimal Solution',
-            showlegend=True
+            x=opt_temps, y=opt_times, mode='markers',
+            marker=dict(size=22, symbol='star', color=opt_hardnesses, 
+                       colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
+                       line=dict(width=2, color='black')),
+            text=opt_hovers, hovertemplate='%{text}<extra></extra>', name='Optimal'
         ))
     
-    # Update layout
     fig.update_layout(
-        title="Steel Heat Treatment Solution Space: Temperature-Time Analysis",
-        xaxis_title="Temperature (°C)",
-        yaxis_title="Time (s)",
-        hovermode='closest',
-        template='plotly_white',
-        width=1200,
-        height=800,
-        font=dict(size=12)
+        title="Steel Heat Treatment Solution Space",
+        xaxis_title="Temperature (°C)", yaxis_title="Time (s)",
+        template='plotly_white', height=800
     )
     
-    fig.write_html(output_filename, config={'displayModeBar': True, 'displaylogo': False})
+    fig.write_html(output_filename, config={'displayModeBar': True})
     print(f"✓ Interactive heatmap saved: {output_filename}")
     if auto_open:
         import webbrowser
