@@ -169,16 +169,10 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
     """
     Generates an interactive Plotly heatmap of Temperature vs Time with hardness as color.
     Each point shows steel type and hardness on hover.
-    
-    Args:
-        graph: NetworkX graph containing treatment data
-        output_filename: Path to save HTML file
-        highlight_points: List of (temp, time) tuples to highlight as optimal solutions
-        auto_open: Whether to open the HTML file in browser automatically
+    FIX: Now iterates through ALL predecessors to capture the full solution space.
     """
     try:
         import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
     except ImportError:
         print("WARNING: Plotly not installed. Falling back to matplotlib heatmap.")
         _plot_matplotlib_heatmap_fallback(graph, output_filename, highlight_points)
@@ -189,40 +183,35 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
     # Extract data from graph nodes
     points_data = defaultdict(list)
     
-    for node, data in graph.nodes(data=True):
-        if data.get('layer') == 4:  # Hardness layer
-            hardness = data.get('value')
-            if hardness is None:
-                continue
+    # Percorre todos os nós para encontrar a camada de Dureza (Layer 4)
+    for hard_node, hard_data in graph.nodes(data=True):
+        if hard_data.get('layer') == 4:  # Hardness layer
+            hardness = hard_data.get('value')
+            if hardness is None: continue
             
-            # Find predecessor temperature and time nodes
-            predecessors = list(graph.predecessors(node))
-            if not predecessors:
-                continue
-            
-            temp_node = predecessors[0]
-            temp_data = graph.nodes[temp_node]
-            temp = temp_data.get('value')
-            
-            time_predecessors = list(graph.predecessors(temp_node))
-            if not time_predecessors:
-                continue
-            
-            time_node = time_predecessors[0]
-            time_data = graph.nodes[time_node]
-            time = time_data.get('value')
-            
-            steel_predecessors = list(graph.predecessors(time_node))
-            if not steel_predecessors:
-                continue
-            
-            steel = steel_predecessors[0]
-            
-            if temp is not None and time is not None:
-                points_data[(temp, time)].append({
-                    'steel': steel,
-                    'hardness': hardness
-                })
+            # Backtrack 1: Hardness <- Temp
+            # Iterar sobre TODOS os predecessores de temperatura
+            for temp_node in graph.predecessors(hard_node):
+                temp_data = graph.nodes[temp_node]
+                temp = temp_data.get('value')
+                
+                # Backtrack 2: Temp <- Time
+                # Iterar sobre TODOS os predecessores de tempo
+                for time_node in graph.predecessors(temp_node):
+                    time_data = graph.nodes[time_node]
+                    time = time_data.get('value')
+                    
+                    # Backtrack 3: Time <- Steel
+                    # Iterar sobre TODOS os aços que levam a esse tempo
+                    for steel_node in graph.predecessors(time_node):
+                        # O nome do nó de aço geralmente é o próprio identificador do aço
+                        steel = str(steel_node).split('_')[0] if '_' in str(steel_node) else str(steel_node)
+                        
+                        if temp is not None and time is not None:
+                            points_data[(temp, time)].append({
+                                'steel': steel,
+                                'hardness': hardness
+                            })
     
     if not points_data:
         print("WARNING: No valid data points found for heatmap")
@@ -240,18 +229,26 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         # Average hardness if multiple steels at same (temp, time)
         avg_hardness = sum(item['hardness'] for item in items) / len(items)
         
+        # Remove duplicates steels for the hover list (just in case graph has redundancies)
+        unique_steels = {}
+        for item in items:
+            unique_steels[item['steel']] = item['hardness']
+            
         # Create hover text
-        if len(items) == 1:
+        if len(unique_steels) == 1:
+            item = items[0]
             hover_text = (
-                f"Steel: {items[0]['steel']}<br>"
+                f"Steel: {item['steel']}<br>"
                 f"Temp: {temp}°C<br>"
                 f"Time: {time}s<br>"
-                f"Hardness: {items[0]['hardness']:.1f} HRC"
+                f"Hardness: {item['hardness']:.1f} HRC"
             )
         else:
-            steels_list = "<br>".join([f"  • {item['steel']}: {item['hardness']:.1f} HRC" for item in items])
+            # Sort steels by name for cleaner tooltip
+            sorted_steels = sorted(unique_steels.items())
+            steels_list = "<br>".join([f"  • {s}: {h:.1f} HRC" for s, h in sorted_steels])
             hover_text = (
-                f"<b>Multiple Steels ({len(items)})</b><br>"
+                f"<b>Multiple Steels ({len(unique_steels)})</b><br>"
                 f"Temp: {temp}°C<br>"
                 f"Time: {time}s<br>"
                 f"Avg Hardness: {avg_hardness:.1f} HRC<br>"
@@ -265,7 +262,7 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             opt_hardnesses.append(avg_hardness)
             opt_hover_text = f"<b>⭐ OPTIMAL SOLUTION ⭐</b><br>{hover_text}"
             opt_hovers.append(opt_hover_text)
-        elif len(items) > 1:
+        elif len(unique_steels) > 1:
             multi_temps.append(temp)
             multi_times.append(time)
             multi_hardnesses.append(avg_hardness)
@@ -313,7 +310,7 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             name='Single Steel'
         ))
     
-    # Multi-steel points (squares) - shows colorbar if no single steel points
+    # Multi-steel points (squares)
     if multi_temps:
         show_colorbar_multi = not single_temps
         fig.add_trace(go.Scatter(
@@ -340,7 +337,7 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             name='■ Multiple Steels'
         ))
     
-    # Optimal solution (star with black border) - shows colorbar if only optimal points exist
+    # Optimal solution (star)
     if opt_temps:
         show_colorbar_opt = not single_temps and not multi_temps
         fig.add_trace(go.Scatter(
@@ -370,7 +367,7 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
     
     # Update layout
     fig.update_layout(
-        title="Steel Heat Treatment Solution Space: Temperature-Time Analysis with Hardness Response",
+        title="Steel Heat Treatment Solution Space: Temperature-Time Analysis",
         xaxis_title="Temperature (°C)",
         yaxis_title="Time (s)",
         hovermode='closest',
@@ -380,15 +377,12 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         font=dict(size=12)
     )
     
-    # Save and optionally open
     fig.write_html(output_filename, config={'displayModeBar': True, 'displaylogo': False})
     print(f"✓ Interactive heatmap saved: {output_filename}")
-    print(f"  → Open in browser: file://{os.path.abspath(output_filename)}")
-    
     if auto_open:
         import webbrowser
-        webbrowser.open(output_filename)
-
+        import os
+        webbrowser.open(f"file://{os.path.abspath(output_filename)}")
 
 
 
