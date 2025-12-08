@@ -12,3 +12,4 @@ networkx>=3.0
 
 # Visualization
 matplotlib>=3.7.0
+plotly>=5.14.0

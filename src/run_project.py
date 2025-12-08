@@ -157,8 +157,8 @@ def setup_environment():
         except: 
             pass
     
-    # Suppress stdout only if explicitly enabled
-    # sys.stdout = NullWriter()  # Commented out to see output
+    # Suppress all stdout output
+    sys.stdout = NullWriter()
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     
     # Clean outputs folder
@@ -178,78 +178,6 @@ def setup_environment():
         except:
             pass
 
-
-def load_and_validate_queries():
-    """
-    Loads and validates queries from consultas.json.
-    """
-    try:
-        with open(config.QUERIES_PATH, 'r', encoding='utf-8') as f:
-            consultas_raw = json.load(f)
-        
-        if not isinstance(consultas_raw, list):
-            log_error("consultas.json must contain a list of queries", level='CRITICAL')
-            return None
-        
-        consultas = []
-        for idx, query in enumerate(consultas_raw):
-            validated = validate_query(query, idx)
-            if validated:
-                consultas.append(validated)
-        
-        if not consultas:
-            log_error("No valid queries found", level='CRITICAL')
-            return None
-        
-        return consultas
-        
-    except FileNotFoundError:
-        log_error(f"consultas.json not found at: {config.QUERIES_PATH}", level='CRITICAL')
-        return None
-    except json.JSONDecodeError as e:
-        log_error(f"Invalid JSON: {e}", level='CRITICAL')
-        return None
-    except Exception as e:
-        log_error(f"Error reading consultas.json: {e}", level='CRITICAL')
-        return None
-
-
-def initialize_graph():
-    """
-    Initializes the master steel graph.
-    """
-    from steel_graph import SteelGraph
-    import preprocess
-    
-    if not os.path.exists(config.PROCESSED_DATA_PATH):
-        if not os.path.exists(config.RAW_DATA_PATH):
-            log_error(f"Raw file not found: {config.RAW_DATA_PATH}", level='CRITICAL')
-            return None
-        try:
-            if not preprocess.main():
-                log_error("Preprocessing failed", level='CRITICAL')
-                return None
-        except Exception as e:
-            log_error(f"Preprocessing error: {e}", exc_info=True, level='CRITICAL')
-            return None
-    
-    try:
-        graph = SteelGraph(config.PROCESSED_DATA_PATH)
-        if not graph.graph:
-            log_error("Master Graph empty", level='CRITICAL')
-            return None
-        
-        try:
-            output_path = os.path.join(config.OUTPUT_DIR, 'main_full_graph.png')
-            plot_full_graph(graph.get_master_graph(), output_path)
-        except Exception as e:
-            log_error(f"Error generating full graph: {e}")
-        
-        return graph
-        
-    except Exception as e:
-        log_error(f"Error building graph: {e}", exc_info=True, level='CRITICAL')
-        return None
 
 def load_queries():
     """
