@@ -332,8 +332,6 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
             text="Steel Heat Treatment Solution Space: Temperature-Time Analysis with Hardness Response",
             x=0.5,
             xanchor='center',
-            y=0.98,
-            yanchor='top',
             font=dict(size=16)
         ),
         xaxis_title="Temperature (°C)", 
@@ -343,19 +341,18 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         height=800,
         hovermode='closest',
         font=dict(size=12),
-        # Position legend below title
+        # Position legend on bottom-left inside plot area
         legend=dict(
-            orientation='h',
-            x=0.5,
-            y=-0.15,  # Below the plot
-            xanchor='center',
-            yanchor='top',
+            x=0.02,
+            y=0.02,
+            xanchor='left',
+            yanchor='bottom',
             bgcolor='rgba(255, 255, 255, 0.95)',
             bordercolor='rgba(0, 0, 0, 0.3)',
-            borderwidth=1
+            borderwidth=1.5
         ),
-        # Add margins
-        margin=dict(r=120, t=120, b=80)
+        # Add margin for colorbar only
+        margin=dict(r=120)
     )
     
     fig.write_html(output_filename, config={'displayModeBar': True})
