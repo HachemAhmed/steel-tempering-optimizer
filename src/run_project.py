@@ -161,12 +161,22 @@ def setup_environment():
     # sys.stdout = NullWriter()  # Commented out to see output
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     
+    # Clean outputs folder
     for ext in ["*.png", "*.jpg", "*.txt"]:
         for f in glob.glob(os.path.join(config.OUTPUT_DIR, ext)):
             try: 
                 os.remove(f)
             except: 
                 pass
+    
+    # Clean docs/heatmaps folder
+    docs_heatmaps = os.path.join(os.getcwd(), 'docs', 'heatmaps')
+    os.makedirs(docs_heatmaps, exist_ok=True)
+    for f in glob.glob(os.path.join(docs_heatmaps, "*.html")):
+        try:
+            os.remove(f)
+        except:
+            pass
 
 
 def load_and_validate_queries():
