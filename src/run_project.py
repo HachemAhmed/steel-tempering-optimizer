@@ -11,7 +11,8 @@ import config
 import preprocess
 from steel_graph import SteelGraph
 from utils import log_error, NullWriter
-from graph_visualizer import plot_filtered_graph_comparison, plot_full_graph, plot_interactive_heatmap, plot_static_heatmap
+from graph_plots import plot_filtered_graph_comparison, plot_full_graph
+from heatmap_plots import plot_interactive_heatmap, plot_static_heatmap
 from reporter import generate_text_report
 from generate_index import generate_index_html
 
