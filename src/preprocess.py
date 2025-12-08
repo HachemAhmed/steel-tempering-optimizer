@@ -19,14 +19,9 @@ def main():
     print("--- Running Preprocessing (preprocess.py) ---")
     try:
         df = pd.read_csv(config.RAW_DATA_PATH, header=0, encoding='utf-8')
-        
-        # Clean whitespace from column names
         df.columns = df.columns.str.strip()
-        
-        # Remove completely empty rows
         df_cleaned = df.dropna(how='all')
 
-        # Drop unnecessary columns
         columns_to_drop = ['Initial hardness (HRC) - post quenching', 'Source']
         existing_columns_to_drop = [col for col in columns_to_drop if col in df_cleaned.columns]
         
@@ -34,7 +29,6 @@ def main():
             df_cleaned = df_cleaned.drop(columns=existing_columns_to_drop)
             print(f"Columns removed: {existing_columns_to_drop}")
         
-        # Validate required columns exist
         required_columns = [
             config.DB_CONFIG.COL_STEEL,
             config.DB_CONFIG.COL_TIME,
@@ -48,7 +42,6 @@ def main():
             print(f"Available columns: {list(df_cleaned.columns)}")
             return False
         
-        # Verify composition columns format
         comp_cols = [c for c in df_cleaned.columns if config.DB_CONFIG.KEY_COMPOSITION in c]
         if not comp_cols:
             print(f"WARNING: No composition columns found with pattern '{config.DB_CONFIG.KEY_COMPOSITION}'")
@@ -56,12 +49,10 @@ def main():
         else:
             print(f"Found {len(comp_cols)} composition columns: {comp_cols}")
         
-        # Report missing values
         total_missing = df_cleaned.isnull().sum().sum()
         if total_missing > 0:
             print(f"\nWARNING: Found {total_missing} missing values (NaN).")
 
-        # Save processed data
         df_cleaned.to_csv(config.PROCESSED_DATA_PATH, index=False, encoding='utf-8')
         print(f"Processed file saved to: {config.PROCESSED_DATA_PATH}")
         return True

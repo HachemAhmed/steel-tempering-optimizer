@@ -8,11 +8,11 @@ from collections import defaultdict
 import matplotlib.patheffects as path_effects
 import numpy as np
 import os
+
 def _deterministic_layout(G):
     """
     Creates a 100% reproducible layout based on node values and layers.
-    Replaces random/heuristic layouts to ensure scientific consistency.
-    Y-axis logic: Sorts nodes by their physical 'value' (Temp/Time) or Name.
+    Ensures scientific consistency by sorting nodes deterministically.
     """
     pos = {}
     nodes_by_layer = defaultdict(list)

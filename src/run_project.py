@@ -12,12 +12,8 @@ import preprocess
 from steel_graph import SteelGraph
 from utils import log_error, NullWriter
 from graph_visualizer import plot_filtered_graph_comparison, plot_full_graph, plot_interactive_heatmap, plot_static_heatmap
-
 from reporter import generate_text_report
 from generate_index import generate_index_html
-# ============================================================================
-# VALIDATION
-# ============================================================================
 
 def validate_query(query, index):
     """
@@ -45,10 +41,6 @@ def validate_query(query, index):
     return query
 
 
-# ============================================================================
-# QUERY EXECUTION
-# ============================================================================
-
 def execute_query(graph, query, output_dir):
     """
     Executes a complete query: runs algorithm, generates report and visualizations.
@@ -58,14 +50,12 @@ def execute_query(graph, query, output_dir):
     optimize_by = query['optimize_by']
     alpha = query.get('alpha', 0.5)
     
-    # Step 1: Run optimization algorithm
     result = _run_algorithm(graph, nome, filtros, optimize_by, alpha)
     if result is None:
         return False
     
     paths, custo, grafo_podado, details_list, success = result
     
-    # Step 2: Generate report
     report_path = os.path.join(output_dir, f"{nome}_report.txt")
     if success:
         result_data = (paths, custo, grafo_podado, details_list)
@@ -74,7 +64,7 @@ def execute_query(graph, query, output_dir):
     
     generate_text_report(report_path, nome, optimize_by, filtros, result_data, alpha)
     
-    # Step 3: Generate visualizations
+    # Generate visualizations only if solution exists
     if success and grafo_podado and grafo_podado.number_of_nodes() > 0:
         _generate_visualizations(output_dir, nome, paths, custo, optimize_by, 
                                 grafo_podado, details_list)
@@ -143,10 +133,6 @@ def _generate_visualizations(output_dir, nome, paths, custo, optimize_by,
         log_error(f"Error plotting interactive heatmap '{nome}': {e}")
 
 
-# ============================================================================
-# SETUP AND INITIALIZATION
-# ============================================================================
-
 def setup_environment():
     """
     Configures initial environment.
@@ -157,11 +143,10 @@ def setup_environment():
         except: 
             pass
     
-    # Suppress all stdout output
-    sys.stdout = NullWriter()
+    sys.stdout = NullWriter()  # Suppress console output
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     
-    # Clean outputs folder
+    # Remove old output files
     for ext in ["*.png", "*.jpg", "*.txt"]:
         for f in glob.glob(os.path.join(config.OUTPUT_DIR, ext)):
             try: 
@@ -169,7 +154,7 @@ def setup_environment():
             except: 
                 pass
     
-    # Clean docs/heatmaps folder
+    # Remove old HTML heatmaps from GitHub Pages directory
     docs_heatmaps = os.path.join(os.getcwd(), 'docs', 'heatmaps')
     os.makedirs(docs_heatmaps, exist_ok=True)
     for f in glob.glob(os.path.join(docs_heatmaps, "*.html")):
@@ -206,9 +191,6 @@ def load_queries():
     except Exception as e:
         log_error(f"Error loading queries: {e}")
         return []
-# ============================================================================
-# MAIN
-# ============================================================================
 
 def main():
     """
@@ -221,7 +203,6 @@ def main():
     """
     setup_environment()
     
-    # Step 1: Preprocess data
     print("\n" + "="*60)
     print("STEP 1: DATA PREPROCESSING")
     print("="*60)
@@ -229,7 +210,6 @@ def main():
         log_error("Preprocessing failed")
         return False
     
-    # Step 2: Build graph
     print("\n" + "="*60)
     print("STEP 2: GRAPH CONSTRUCTION")
     print("="*60)
@@ -241,14 +221,12 @@ def main():
         log_error(f"Graph construction failed: {e}")
         return False
     
-    # Step 3: Generate full graph visualization
     print("\n" + "="*60)
     print("STEP 3: FULL GRAPH VISUALIZATION")
     print("="*60)
     full_graph_path = os.path.join(config.OUTPUT_DIR, "full_graph.png")
     plot_full_graph(graph.get_master_graph(), full_graph_path)
     
-    # Step 4: Load and execute queries
     print("\n" + "="*60)
     print("STEP 4: EXECUTING QUERIES")
     print("="*60)
@@ -265,7 +243,6 @@ def main():
             continue
         execute_query(graph, query, config.OUTPUT_DIR)
     
-    # Step 5: Generate index.html automatically
     print("\n" + "="*60)
     print("STEP 5: GENERATING INDEX.HTML")
     print("="*60)

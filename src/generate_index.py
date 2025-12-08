@@ -8,42 +8,36 @@ import config
 
 def format_filters_to_html(filters):
     """
-    Converte o dicionário de filtros complexo em HTML legível para o card.
+    Converts filter dictionary to readable HTML for the query card.
     """
     lines = []
     
-    # Hardness
     if 'hardness_range' in filters:
         h = filters['hardness_range']
         lines.append(f"Target: <strong>{h.get('min', '?')}-{h.get('max', '?')} HRC</strong>")
     
-    # Temperature
     if 'temperature_range' in filters:
         t = filters['temperature_range']
         lines.append(f"Temp: {t.get('min', '?')}-{t.get('max', '?')} °C")
     
-    # Time
     if 'time_range' in filters:
         tm = filters['time_range']
-        # Se min e max forem iguais, mostra valor único
         if tm.get('min') == tm.get('max'):
             lines.append(f"Time: {tm.get('min')}s (Fixed)")
         else:
             lines.append(f"Time: {tm.get('min')}-{tm.get('max')}s")
 
-    # Composition elements (C, Mn, Cr, etc)
     elements = []
     for key, val in filters.items():
         if '(%wt)' in key:
             op = val.get('op', '=')
             v = val.get('val', 0)
-            clean_key = key.split()[0] # Pega só 'C' de 'C (%wt)'
+            clean_key = key.split()[0]
             elements.append(f"{clean_key} {op} {v}%")
     
     if elements:
         lines.append("Comp: " + ", ".join(elements))
         
-    # Steel Type
     if 'steel_type' in filters:
         lines.append(f"Steel: <strong>{filters['steel_type']}</strong>")
 
