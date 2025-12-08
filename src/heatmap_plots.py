@@ -150,12 +150,18 @@ def plot_interactive_heatmap(graph, output_filename, highlight_points=None, auto
         ))
     
     if opt_temps:
+        show_colorbar_on_optimal = not single_temps and not multi_temps
         fig.add_trace(go.Scatter(
             x=opt_temps, y=opt_times, mode='markers',
             marker=dict(size=22, symbol='star', color=opt_hardnesses, 
                        colorscale='RdYlBu_r', cmin=vmin, cmax=vmax,
                        line=dict(width=2, color='black'),
-                       showscale=False),
+                       showscale=show_colorbar_on_optimal,
+                       colorbar=dict(
+                           title="Hardness (HRC)",
+                           x=1.02,
+                           xanchor='left'
+                       ) if show_colorbar_on_optimal else None),
             text=opt_hovers, hovertemplate='%{text}<extra></extra>', 
             name='Optimal',
             showlegend=True
