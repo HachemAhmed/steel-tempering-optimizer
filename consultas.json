@@ -1,86 +1,73 @@
 [
   {
-    "query_name": "Test_1_Standard_Optimize_Time",
+    "comment": "--- ESTUDO DE CASO 1: ANÁLISE COMPARATIVA DE OTIMIZAÇÃO (TRADE-OFFS) ---",
+    "query_name": "Case1_A_Efficiency_Time_Opt",
     "optimize_by": "time",
     "filters": {
-      "hardness_range": {"min": 45, "max": 50},
-      "temperature_range": {"min": 400, "max": 450}
+      "hardness_range": {"min": 45, "max": 48},
+      "temperature_range": {"min": 200, "max": 650}
     }
   },
   {
-    "query_name": "Test_2_Standard_Optimize_Temperature",
+    "query_name": "Case1_B_Energy_Temp_Opt",
     "optimize_by": "temperature",
     "filters": {
-      "hardness_range": {"min": 55, "max": 60},
-      "time_range": {"min": 600.0, "max": 600.0}
+      "hardness_range": {"min": 45, "max": 48},
+      "temperature_range": {"min": 200, "max": 650}
     }
   },
   {
-    "query_name": "Test_3_High_Chromium_Alloy",
-    "optimize_by": "time",
-    "filters": {
-      "hardness_range": {"min": 50, "max": 55},
-      "C (%wt)": {"op": ">", "val": 0.5},
-      "Cr (%wt)": {"op": ">", "val": 0.7}
-    }
-  },
-  {
-    "query_name": "Test_4_Impossible_Constraints",
-    "optimize_by": "time",
-    "filters": {
-      "hardness_range": {"min": 60, "max": 65},
-      "C (%wt)": {"op": "<", "val": 0.1}
-    }
-  },
-  {
-    "query_name": "Test_5_Low_Hardness_High_Temp",
-    "optimize_by": "temperature",
-    "filters": {
-      "hardness_range": {"min": 15, "max": 20},
-      "temperature_range": {"min": 650, "max": 700}
-    }
-  },
-  {
-    "query_name": "Test_6_Long_Duration_24h",
-    "optimize_by": "temperature",
-    "filters": {
-      "hardness_range": {"min": 35, "max": 40},
-      "time_range": {"min": 86400.0, "max": 86400.0}
-    }
-  },
-  {
-    "query_name": "Test_7_Specific_Steel_1045",
-    "optimize_by": "time",
-    "filters": {
-      "hardness_range": {"min": 45, "max": 50},
-      "steel_type": "AISI-SAE 1045"
-    }
-  },
-  {
-    "query_name": "Test_8_Broad_Heatmap_4140",
-    "optimize_by": "time",
-    "filters": {
-      "hardness_range": {"min": 20, "max": 60},
-      "steel_type": "AISI-SAE 4140"
-    }
-  },
-  {
-    "query_name": "Test_9_Balanced_Optimization",
+    "query_name": "Case1_C_Balanced_Opt",
     "optimize_by": "balanced",
     "alpha": 0.5,
     "filters": {
-      "hardness_range": {"min": 40, "max": 45},
-      "C (%wt)": {"op": "<", "val": 0.5}
+      "hardness_range": {"min": 45, "max": 48},
+      "temperature_range": {"min": 200, "max": 650}
     }
   },
+
   {
-    "query_name": "Test_10_Balanced_Tradeoff",
+    "comment": "--- ESTUDO DE CASO 2: SELEÇÃO DE MATERIAIS SOB RESTRIÇÕES RÍGIDAS ---",
+    "query_name": "Case2_High_Performance_Alloy",
     "optimize_by": "balanced",
-    "alpha": 0.3,
+    "alpha": 0.6,
     "filters": {
-      "hardness_range": {"min": 40, "max": 50},
-      "C (%wt)": {"op": ">", "val": 0.3},
-      "Mn (%wt)": {"op": "<", "val": 0.9}
+      "hardness_range": {"min": 52, "max": 55},
+      "C (%wt)": {"op": ">", "val": 0.35},
+      "Cr (%wt)": {"op": ">", "val": 0.8},
+      "time_range": {"min": 0, "max": 7200}
+    }
+  },
+
+  {
+    "comment": "--- ESTUDO DE CASO 3: ANÁLISE DE TOPOLOGIA E MAPA DE CALOR (SOLUÇÃO GLOBAL) ---",
+    "query_name": "Case3_Topology_AISI4140_Map",
+    "optimize_by": "time",
+    "filters": {
+      "hardness_range": {"min": 25, "max": 60},
+      "steel_type": "AISI-SAE 4140"
+    }
+  },
+
+  {
+    "comment": "--- ESTUDO DE CASO 4: ROBUSTEZ DO ALGORITMO (CENÁRIO IMPOSSÍVEL) ---",
+    "query_name": "Case4_Robustness_Fail_Check",
+    "optimize_by": "time",
+    "filters": {
+      "hardness_range": {"min": 62, "max": 68},
+      "C (%wt)": {"op": "<", "val": 0.2},
+      "temperature_range": {"min": 500, "max": 700}
+    }
+  },
+
+  {
+    "comment": "--- ESTUDO DE CASO 5: EMPATE TÉCNICO E DECISÃO DE ENGENHARIA ---",
+    "query_name": "Case5_Engineering_Tradeoff",
+    "optimize_by": "time",
+    "filters": {
+      "hardness_range": {"min": 40, "max": 58},
+      "time_range": {"min": 0, "max": 3600},
+      "temperature_range": {"min": 200, "max": 600}
     }
   }
 ]
