@@ -70,5 +70,16 @@
     "time_range": {"min": 2400, "max": 3600}, 
     "temperature_range": {"min": 350, "max": 450}
     }
+  },
+  {
+  "comment": "--- CASO 6: COMPARATIVO DIRETO ENTRE LIGAS ---",
+  "query_name": "Case6_Liga_Comparison",
+  "optimize_by": "balanced",
+  "alpha": 0.5,
+  "filters": {
+    "hardness_range": {"min": 50, "max": 52},
+    "temperature_range": {"min": 300, "max": 500},
+    "time_range": {"min": 1800, "max": 5400}
   }
+}
 ]
