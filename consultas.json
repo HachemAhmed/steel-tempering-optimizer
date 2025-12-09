@@ -33,8 +33,9 @@
     "alpha": 0.6,
     "filters": {
       "hardness_range": {"min": 52, "max": 55},
-      "C (%wt)": {"op": ">", "val": 0.35},
-      "Cr (%wt)": {"op": ">", "val": 0.8},
+      "C (%wt)": {"op": ">", "val": 0.38},    
+      "Cr (%wt)": {"op": ">", "val": 0.9},    
+      "Mo (%wt)": {"op": ">", "val": 0.15},    
       "time_range": {"min": 0, "max": 7200}
     }
   },
@@ -65,9 +66,9 @@
     "query_name": "Case5_Engineering_Tradeoff",
     "optimize_by": "time",
     "filters": {
-      "hardness_range": {"min": 40, "max": 58},
-      "time_range": {"min": 0, "max": 3600},
-      "temperature_range": {"min": 200, "max": 600}
+    "hardness_range": {"min": 48, "max": 52},  
+    "time_range": {"min": 2400, "max": 3600}, 
+    "temperature_range": {"min": 350, "max": 450}
     }
   }
 ]
