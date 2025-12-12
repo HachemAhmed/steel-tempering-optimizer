@@ -1,0 +1,44 @@
+============================================================
+TECHNICAL REPORT: Case2_High_Performance_Alloy
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: BALANCED (Minimize)
+Alpha (Time Weight): 0.6
+Beta (Temp Weight): 0.4
+Filters Applied:
+  - hardness_range: 52 - 55
+  - C (%wt): > 0.38
+  - Cr (%wt): > 0.9
+  - Mo (%wt): > 0.15
+  - time_range: 0 - 7200
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 1 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 0.45 (Score)
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: Nitriding Steel  -> Time: 600.0 s -> Temp: 204.4 C -> Hardness: 55.0 HRC
+
+Selected Steel Specs:
+  Steel Type:        Nitriding Steel 
+  Final Hardness:    55.0 HRC
+  Temp Process:      204.4 C
+  Time Process:      600.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.57
+    P   : 0.017
+    S   : 0.005
+    Si  : 0.24
+    Ni  : 0.17
+    Cr  : 1.57
+    Mo  : 0.36
+    V   : 0.0
+    Al  : 1.26
+    Cu  : 0.0
+
+============================================================

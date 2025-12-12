@@ -1,0 +1,61 @@
+============================================================
+TECHNICAL REPORT: Case1_A_Efficiency_Time_Opt
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: TIME (Minimize)
+Filters Applied:
+  - hardness_range: 45 - 48
+  - temperature_range: 200 - 650
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 2 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 10.00 s
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 600.0 C -> Hardness: 45.9 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    45.9 HRC
+  Temp Process:      600.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #2 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4340 -> Time: 10.0 s -> Temp: 500.0 C -> Hardness: 45.2 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4340
+  Final Hardness:    45.2 HRC
+  Temp Process:      500.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.39
+    Mn  : 0.75
+    P   : 0.019
+    S   : 0.016
+    Si  : 0.26
+    Ni  : 1.74
+    Cr  : 0.79
+    Mo  : 0.26
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+============================================================

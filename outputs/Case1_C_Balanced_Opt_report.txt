@@ -1,0 +1,41 @@
+============================================================
+TECHNICAL REPORT: Case1_C_Balanced_Opt
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: BALANCED (Minimize)
+Alpha (Time Weight): 0.5
+Beta (Temp Weight): 0.5
+Filters Applied:
+  - hardness_range: 45 - 48
+  - temperature_range: 200 - 650
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 1 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 0.45 (Score)
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4340 -> Time: 10.0 s -> Temp: 500.0 C -> Hardness: 45.2 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4340
+  Final Hardness:    45.2 HRC
+  Temp Process:      500.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.39
+    Mn  : 0.75
+    P   : 0.019
+    S   : 0.016
+    Si  : 0.26
+    Ni  : 1.74
+    Cr  : 0.79
+    Mo  : 0.26
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+============================================================

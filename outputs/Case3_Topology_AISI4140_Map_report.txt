@@ -1,0 +1,193 @@
+============================================================
+TECHNICAL REPORT: Case3_Topology_AISI4140_Map
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: TIME (Minimize)
+Filters Applied:
+  - hardness_range: 25 - 60
+  - steel_type: AISI-SAE 4140
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 8 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 10.00 s
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 700.0 C -> Hardness: 43.2 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    43.2 HRC
+  Temp Process:      700.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #2 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 600.0 C -> Hardness: 45.9 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    45.9 HRC
+  Temp Process:      600.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #3 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 500.0 C -> Hardness: 49.6 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    49.6 HRC
+  Temp Process:      500.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #4 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 400.0 C -> Hardness: 55.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    55.5 HRC
+  Temp Process:      400.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #5 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 300.0 C -> Hardness: 56.2 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    56.2 HRC
+  Temp Process:      300.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #6 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 250.0 C -> Hardness: 56.7 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    56.7 HRC
+  Temp Process:      250.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #7 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 200.0 C -> Hardness: 58.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    58.5 HRC
+  Temp Process:      200.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #8 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 10.0 s -> Temp: 100.0 C -> Hardness: 59.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    59.5 HRC
+  Temp Process:      100.0 C
+  Time Process:      10.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+============================================================

@@ -1,0 +1,64 @@
+============================================================
+TECHNICAL REPORT: Case6_Liga_Comparison
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: BALANCED (Minimize)
+Alpha (Time Weight): 0.5
+Beta (Temp Weight): 0.5
+Filters Applied:
+  - hardness_range: 50 - 52
+  - temperature_range: 300 - 500
+  - time_range: 1800 - 5400
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 2 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 0.56 (Score)
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: AISI-SAE 5160 -> Time: 3600.0 s -> Temp: 300.0 C -> Hardness: 50.0 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 5160
+  Final Hardness:    50.0 HRC
+  Temp Process:      300.0 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.62
+    Mn  : 0.88
+    P   : 0.012
+    S   : 0.018
+    Si  : 0.22
+    Ni  : 0.0
+    Cr  : 0.79
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #2 ---
+Process Flow:
+Start -> Steel: AISI-SAE 6150 -> Time: 3600.0 s -> Temp: 300.0 C -> Hardness: 50.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 6150
+  Final Hardness:    50.5 HRC
+  Temp Process:      300.0 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.51
+    Mn  : 0.81
+    P   : 0.021
+    S   : 0.014
+    Si  : 0.28
+    Ni  : 0.0
+    Cr  : 0.98
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+============================================================

@@ -1,0 +1,39 @@
+============================================================
+TECHNICAL REPORT: Case1_B_Energy_Temp_Opt
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: TEMPERATURE (Minimize)
+Filters Applied:
+  - hardness_range: 45 - 48
+  - temperature_range: 200 - 650
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 1 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 200.00 C
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4340 -> Time: 86400.0 s -> Temp: 200.0 C -> Hardness: 46.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4340
+  Final Hardness:    46.5 HRC
+  Temp Process:      200.0 C
+  Time Process:      86400.0 s
+  Composition (%):
+    C   : 0.39
+    Mn  : 0.75
+    P   : 0.019
+    S   : 0.016
+    Si  : 0.26
+    Ni  : 1.74
+    Cr  : 0.79
+    Mo  : 0.26
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+============================================================

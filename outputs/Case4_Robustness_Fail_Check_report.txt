@@ -1,0 +1,18 @@
+============================================================
+TECHNICAL REPORT: Case4_Robustness_Fail_Check
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: TIME (Minimize)
+Filters Applied:
+  - hardness_range: 62 - 68
+  - C (%wt): < 0.2
+  - temperature_range: 500 - 700
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 24 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 0.00 s
+
+============================================================

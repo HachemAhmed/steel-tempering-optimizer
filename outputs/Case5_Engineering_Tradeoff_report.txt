@@ -1,0 +1,260 @@
+============================================================
+TECHNICAL REPORT: Case5_Engineering_Tradeoff
+============================================================
+
+1. SEARCH PARAMETERS
+------------------------------
+Optimization Goal: TIME (Minimize)
+Filters Applied:
+  - hardness_range: 48 - 52
+  - time_range: 2400 - 3600
+  - temperature_range: 350 - 450
+
+2. OPTIMIZATION RESULTS (DIJKSTRA)
+------------------------------
+STATUS: 11 OPTIMAL SOLUTION(S) FOUND
+Total Cost: 3600.00 s
+
+--- OPTION #1 ---
+Process Flow:
+Start -> Steel: AISI-SAE 1065 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 49.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 1065
+  Final Hardness:    49.5 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.63
+    Mn  : 0.87
+    P   : 0.023
+    S   : 0.018
+    Si  : 0.17
+    Ni  : 0.02
+    Cr  : 0.04
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #2 ---
+Process Flow:
+Start -> Steel: AISI-SAE 1065 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 50.0 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 1065
+  Final Hardness:    50.0 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.63
+    Mn  : 0.87
+    P   : 0.023
+    S   : 0.018
+    Si  : 0.17
+    Ni  : 0.02
+    Cr  : 0.04
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #3 ---
+Process Flow:
+Start -> Steel: AISI-SAE 1080 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 51.0 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 1080
+  Final Hardness:    51.0 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.82
+    Mn  : 0.75
+    P   : 0.054
+    S   : 0.055
+    Si  : 0.3
+    Ni  : 0.0
+    Cr  : 0.0
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #4 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4068 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 50.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4068
+  Final Hardness:    50.5 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.68
+    Mn  : 0.87
+    P   : 0.024
+    S   : 0.029
+    Si  : 0.26
+    Ni  : 0.01
+    Cr  : 0.03
+    Mo  : 0.24
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #5 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4140 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 48.0 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4140
+  Final Hardness:    48.0 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.88
+    P   : 0.016
+    S   : 0.018
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.02
+    Mo  : 0.22
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #6 ---
+Process Flow:
+Start -> Steel: AISI-SAE 4340 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 48.7 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 4340
+  Final Hardness:    48.7 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.39
+    Mn  : 0.75
+    P   : 0.019
+    S   : 0.016
+    Si  : 0.26
+    Ni  : 1.74
+    Cr  : 0.79
+    Mo  : 0.26
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #7 ---
+Process Flow:
+Start -> Steel: AISI-SAE 5140 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 48.3 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 5140
+  Final Hardness:    48.3 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.42
+    Mn  : 0.68
+    P   : 0.026
+    S   : 0.032
+    Si  : 0.16
+    Ni  : 0.07
+    Cr  : 0.93
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #8 ---
+Process Flow:
+Start -> Steel: AISI-SAE 6145 -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 48.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 6145
+  Final Hardness:    48.5 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.43
+    Mn  : 0.74
+    P   : 0.019
+    S   : 0.024
+    Si  : 0.23
+    Ni  : 0.06
+    Cr  : 0.92
+    Mo  : 0.0
+    V   : 0.16
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #9 ---
+Process Flow:
+Start -> Steel: AISI-SAE 9264 -> Time: 3600.0 s -> Temp: 426.7 C -> Hardness: 51.9 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE 9264
+  Final Hardness:    51.9 HRC
+  Temp Process:      426.7 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.55
+    Mn  : 0.78
+    P   : 0.012
+    S   : 0.022
+    Si  : 1.62
+    Ni  : 0.0
+    Cr  : 0.77
+    Mo  : 0.01
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #10 ---
+Process Flow:
+Start -> Steel: AISI-SAE E52100 -> Time: 3600.0 s -> Temp: 400.0 C -> Hardness: 50.5 HRC
+
+Selected Steel Specs:
+  Steel Type:        AISI-SAE E52100
+  Final Hardness:    50.5 HRC
+  Temp Process:      400.0 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 1.02
+    Mn  : 0.4
+    P   : 0.017
+    S   : 0.014
+    Si  : 0.23
+    Ni  : 0.0
+    Cr  : 1.42
+    Mo  : 0.0
+    V   : 0.0
+    Al  : 0.0
+    Cu  : 0.0
+
+--- OPTION #11 ---
+Process Flow:
+Start -> Steel: Nitriding Steel  -> Time: 3600.0 s -> Temp: 371.1 C -> Hardness: 50.7 HRC
+
+Selected Steel Specs:
+  Steel Type:        Nitriding Steel 
+  Final Hardness:    50.7 HRC
+  Temp Process:      371.1 C
+  Time Process:      3600.0 s
+  Composition (%):
+    C   : 0.41
+    Mn  : 0.57
+    P   : 0.017
+    S   : 0.005
+    Si  : 0.24
+    Ni  : 0.17
+    Cr  : 1.57
+    Mo  : 0.36
+    V   : 0.0
+    Al  : 1.26
+    Cu  : 0.0
+
+============================================================
