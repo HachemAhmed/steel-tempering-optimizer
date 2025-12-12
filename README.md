@@ -75,7 +75,7 @@ O sistema é data-driven. Configure os parâmetros de busca e filtros no arquivo
 Para rodar o processamento de dados, construção do grafo e busca do caminho mínimo:
 
 ```bash
-python run_project.py
+python src/run_project.py
 ```
 
 ## 📚 Bibliotecas Utilizadas
